@@ -1,0 +1,94 @@
+# Define services (peers)
+services:
+  peer_1:
+    image: p2p_app
+    networks:
+      network_1:
+      network_2:
+      network_4:
+  peer_2:
+    image: p2p_app
+    networks:
+      network_2:
+  peer_3:
+    image: p2p_app
+    networks:
+      network_3:
+  peer_4:
+    image: p2p_app
+    networks:
+      network_3:
+      network_4:
+  peer_5:
+    image: p2p_app
+    networks:
+      network_4:
+      network_5:
+  peer_6:
+    image: p2p_app
+    networks:
+      network_5:
+      network_6:
+  peer_7:
+    image: p2p_app
+    networks:
+      network_6:
+      network_7:
+  peer_8:
+    image: p2p_app
+    networks:
+      network_7:
+      network_8:
+  peer_9:
+    image: p2p_app
+    networks:
+      network_8:
+      network_9:
+
+# Define multiple networks
+networks:
+  network_1:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.1.0/24
+  network_2:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.2.0/24
+  network_3:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.3.0/24
+  network_4:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.4.0/24
+  network_5:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.5.0/24
+  network_6:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.6.0/24
+  network_7:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.7.0/24
+  network_8:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.8.0/24
+  network_9:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.9.0/24
