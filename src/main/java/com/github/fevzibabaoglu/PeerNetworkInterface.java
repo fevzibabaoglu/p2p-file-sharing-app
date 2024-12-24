@@ -73,8 +73,14 @@ public class PeerNetworkInterface implements Serializable {
         }
     }
 
-    public static PeerNetworkInterface deserialzie(byte[] data) throws IOException, ClassNotFoundException {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
+    public static PeerNetworkInterface deserialize(byte[] data, int length) throws IOException, ClassNotFoundException {
+        if (length < 0 || length > data.length) {
+            throw new IllegalArgumentException("Invalid length: " + length);
+        }
+        byte[] truncatedData = new byte[length];
+        System.arraycopy(data, 0, truncatedData, 0, length);
+
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(truncatedData);
              ObjectInputStream ois = new ObjectInputStream(bis)) {
             return (PeerNetworkInterface) ois.readObject();
         }

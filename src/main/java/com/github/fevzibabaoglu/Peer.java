@@ -73,8 +73,14 @@ public class Peer implements Serializable {
         }
     }
 
-    public static Peer deserialize(byte[] data) throws IOException, ClassNotFoundException {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
+    public static Peer deserialize(byte[] data, int length) throws IOException, ClassNotFoundException {
+        if (length < 0 || length > data.length) {
+            throw new IllegalArgumentException("Invalid length: " + length);
+        }
+        byte[] truncatedData = new byte[length];
+        System.arraycopy(data, 0, truncatedData, 0, length);
+        
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(truncatedData);
              ObjectInputStream ois = new ObjectInputStream(bis)) {
             return (Peer) ois.readObject();
         }
