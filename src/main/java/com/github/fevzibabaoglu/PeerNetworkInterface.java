@@ -17,6 +17,7 @@ public class PeerNetworkInterface implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final transient NetworkInterface networkInterface;
+    private final short maskLength;
     private final InetAddress broadcastIPAddress;
     private final InetAddress localIPAddress;
 
@@ -24,6 +25,7 @@ public class PeerNetworkInterface implements Serializable {
         this.networkInterface = networkInterface;
 
         if (this.networkInterface.isLoopback() || !this.networkInterface.isUp()) {
+            this.maskLength = 0;
             this.localIPAddress = null;
             this.broadcastIPAddress = null;
             return;
@@ -40,11 +42,13 @@ public class PeerNetworkInterface implements Serializable {
                 continue;
             }
 
+            this.maskLength = interfaceAddress.getNetworkPrefixLength();
             this.localIPAddress = localIPAddress;
             this.broadcastIPAddress = broadcastIPAddress;
             return;
         }
 
+        this.maskLength = 0;
         this.localIPAddress = null;
         this.broadcastIPAddress = null;
     }  
@@ -55,6 +59,10 @@ public class PeerNetworkInterface implements Serializable {
 
     public NetworkInterface getNetworkInterface() {
         return networkInterface;
+    }
+
+    public short getMaskLength() {
+        return maskLength;
     }
 
     public InetAddress getBroadcastIPAddress() {
