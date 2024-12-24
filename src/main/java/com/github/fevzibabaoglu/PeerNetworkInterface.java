@@ -30,18 +30,18 @@ public class PeerNetworkInterface implements Serializable {
         }
 
         for (InterfaceAddress interfaceAddress : this.networkInterface.getInterfaceAddresses()) {
-            InetAddress localIP = interfaceAddress.getAddress();
-            if (!(localIP instanceof Inet4Address)) {
+            InetAddress localIPAddress = interfaceAddress.getAddress();
+            if (!(localIPAddress instanceof Inet4Address)) {
                 continue;
             }
 
-            InetAddress broadcastIP = interfaceAddress.getBroadcast();
-            if (broadcastIP == null) {
+            InetAddress broadcastIPAddress = interfaceAddress.getBroadcast();
+            if (broadcastIPAddress == null) {
                 continue;
             }
 
-            this.localIPAddress = localIP;
-            this.broadcastIPAddress = broadcastIP;
+            this.localIPAddress = localIPAddress;
+            this.broadcastIPAddress = broadcastIPAddress;
             return;
         }
 
