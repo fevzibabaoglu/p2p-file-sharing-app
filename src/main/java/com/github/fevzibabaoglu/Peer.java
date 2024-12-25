@@ -9,7 +9,6 @@ import java.io.Serializable;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,15 +74,12 @@ public class Peer implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("{%s}", 
+        return String.format("Peer:{%s}", 
             interfacePeersMap.entrySet().stream()
+                .filter(entry -> !entry.getValue().isEmpty()) // Exclude entries with empty sets
                 .map(entry -> String.format("Interface:%s=[%s]",
                     entry.getKey().toString(),
-                    entry.getValue().isEmpty()
-                        ? ""
-                        : entry.getValue().stream()
-                            .map(peer -> peer == this ? "SELF" : peer.toString()) // Handle self-references
-                            .collect(Collectors.joining(","))
+                    entry.getValue().stream().map(Peer::toString).collect(Collectors.joining(","))
                 ))
                 .collect(Collectors.joining(","))
         );

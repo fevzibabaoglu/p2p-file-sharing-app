@@ -96,6 +96,6 @@ public class PeerNetworkInterface implements Serializable {
 
     @Override
     public String toString() {
-        return localIPAddress.getHostAddress();
+        return String.format("%s", localIPAddress);
     }
 }
