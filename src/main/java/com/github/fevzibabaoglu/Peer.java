@@ -34,13 +34,6 @@ public class Peer implements Serializable {
         }
     }
 
-    public PeerNetworkInterface getPeerNetworkInterface(String IPv4Address) {
-        for (PeerNetworkInterface peerNetworkInterface : getPeerNetworkInterfaces()) {
-            if (peerNetworkInterface.getLocalIPAddress().getHostAddress().equals(IPv4Address)) {
-                return peerNetworkInterface;
-            }
-        }
-        return null;
     }
 
     public Set<PeerNetworkInterface> getPeerNetworkInterfaces() {
@@ -57,12 +50,6 @@ public class Peer implements Serializable {
         }
     }
 
-    public void addKnownPeersToInterface(PeerNetworkInterface peerNetworkInterface, List<Peer> peers) {
-        if (interfacePeersMap.containsKey(peerNetworkInterface)) {
-            for (Peer peer : peers) {
-                addKnownPeerToInterface(peerNetworkInterface, peer);
-            }
-        }
     }
 
     public byte[] serialize() throws IOException {
