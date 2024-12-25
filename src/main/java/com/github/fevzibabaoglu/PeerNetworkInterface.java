@@ -12,7 +12,7 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 
-public class PeerNetworkInterface implements Serializable {
+public class PeerNetworkInterface implements Serializable, Cloneable {
     
     private static final long serialVersionUID = 1L;
 
@@ -51,7 +51,14 @@ public class PeerNetworkInterface implements Serializable {
         this.maskLength = 0;
         this.localIPAddress = null;
         this.broadcastIPAddress = null;
-    }  
+    }
+
+    private PeerNetworkInterface(NetworkInterface networkInterface, short maskLength, InetAddress broadcastIPAddress, InetAddress localIPAddress) {
+        this.networkInterface = networkInterface;
+        this.maskLength = maskLength;
+        this.broadcastIPAddress = broadcastIPAddress;
+        this.localIPAddress = localIPAddress;
+    }
 
     public boolean isUpIPv4Interface() {
         return ((broadcastIPAddress != null) && (localIPAddress != null));
@@ -95,7 +102,43 @@ public class PeerNetworkInterface implements Serializable {
     }
 
     @Override
+    public PeerNetworkInterface clone() {
+        try {
+            return new PeerNetworkInterface(
+                null,
+                this.maskLength,
+                this.broadcastIPAddress,
+                this.localIPAddress
+            );
+        } catch (Exception e) {
+            throw new AssertionError("Cloning PeerNetworkInterface failed");
+        }
+    }
+
+    @Override
     public String toString() {
         return String.format("%s", localIPAddress);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        PeerNetworkInterface other = (PeerNetworkInterface) obj;
+        return maskLength == other.maskLength &&
+            (broadcastIPAddress != null ? broadcastIPAddress.getHostAddress().equals(other.broadcastIPAddress.getHostAddress()) : other.broadcastIPAddress == null) &&
+            (localIPAddress != null ? localIPAddress.getHostAddress().equals(other.localIPAddress.getHostAddress()) : other.localIPAddress == null);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Short.hashCode(maskLength);
+        result = 31 * result + (broadcastIPAddress != null ? broadcastIPAddress.getHostAddress().hashCode() : 0);
+        result = 31 * result + (localIPAddress != null ? localIPAddress.getHostAddress().hashCode() : 0);
+        return result;
     }
 }

@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
-public class Peer implements Serializable {
+public class Peer implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 1L;
 
@@ -33,6 +33,8 @@ public class Peer implements Serializable {
         }
     }
 
+    private Peer(Map<PeerNetworkInterface, Set<Peer>> interfacePeersMap) {
+        this.interfacePeersMap = interfacePeersMap;
     }
 
     public Set<PeerNetworkInterface> getPeerNetworkInterfaces() {
@@ -49,6 +51,22 @@ public class Peer implements Serializable {
         }
     }
 
+    // Assuming no circular references
+    public void mergePeer(Peer newPeer) {
+        newPeer.interfacePeersMap.forEach((networkInterface, newPeers) -> {
+            this.interfacePeersMap.merge(networkInterface, new CopyOnWriteArraySet<>(newPeers), (existingPeers, incomingPeers) -> {
+                incomingPeers.forEach(incomingPeer -> 
+                    existingPeers.stream()
+                        .filter(existingPeer -> existingPeer.equals(incomingPeer))
+                        .findFirst()
+                        .ifPresentOrElse(
+                            existingPeer -> existingPeer.mergePeer(incomingPeer),
+                            () -> existingPeers.add(incomingPeer)
+                        )
+                );
+                return existingPeers;
+            });
+        });
     }
 
     public byte[] serialize() throws IOException {
@@ -72,6 +90,23 @@ public class Peer implements Serializable {
         }
     }
 
+    // Assuming no circular references
+    @Override
+    public Peer clone() {
+        try {
+            Map<PeerNetworkInterface, Set<Peer>> clonedMap = new ConcurrentHashMap<>();
+            for (Map.Entry<PeerNetworkInterface, Set<Peer>> entry : interfacePeersMap.entrySet()) {
+                PeerNetworkInterface key = entry.getKey().clone();
+                Set<Peer> clonedSet = new CopyOnWriteArraySet<>(entry.getValue().stream().map(Peer::clone).toList());
+                clonedMap.put(key, clonedSet);
+            }
+            return new Peer(clonedMap);
+        } catch (Exception e) {
+            throw new AssertionError("Cloning Peer failed");
+        }
+    }
+
+    // Assuming no circular references
     @Override
     public String toString() {
         return String.format("Peer:{%s}", 
@@ -83,5 +118,23 @@ public class Peer implements Serializable {
                 ))
                 .collect(Collectors.joining(","))
         );
+    }
+
+    // Assuming no circular references
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        Peer other = (Peer) obj;
+        return interfacePeersMap.keySet().equals(other.interfacePeersMap.keySet());
+    }
+
+    @Override
+    public int hashCode() {
+        return interfacePeersMap.keySet().hashCode();
     }
 }
