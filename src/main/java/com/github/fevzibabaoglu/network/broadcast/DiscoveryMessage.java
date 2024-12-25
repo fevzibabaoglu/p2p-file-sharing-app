@@ -1,4 +1,4 @@
-package com.github.fevzibabaoglu;
+package com.github.fevzibabaoglu.network.broadcast;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -8,6 +8,9 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import com.github.fevzibabaoglu.network.Peer;
+import com.github.fevzibabaoglu.network.PeerNetworkInterface;
 
 public class DiscoveryMessage implements Serializable, Cloneable {
 

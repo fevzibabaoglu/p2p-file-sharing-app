@@ -1,4 +1,4 @@
-package com.github.fevzibabaoglu;
+package com.github.fevzibabaoglu.network;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

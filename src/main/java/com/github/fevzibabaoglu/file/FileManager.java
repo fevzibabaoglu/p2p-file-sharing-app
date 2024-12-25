@@ -1,4 +1,4 @@
-package com.github.fevzibabaoglu;
+package com.github.fevzibabaoglu.file;
 
 import java.io.*;
 import java.nio.file.*;

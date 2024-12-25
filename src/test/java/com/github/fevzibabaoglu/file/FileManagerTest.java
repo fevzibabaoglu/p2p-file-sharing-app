@@ -1,4 +1,4 @@
-package com.github.fevzibabaoglu;
+package com.github.fevzibabaoglu.file;
 
 import org.junit.jupiter.api.*;
 import java.io.*;

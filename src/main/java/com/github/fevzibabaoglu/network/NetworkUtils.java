@@ -1,4 +1,4 @@
-package com.github.fevzibabaoglu;
+package com.github.fevzibabaoglu.network;
 
 import java.net.InetAddress;
 import java.net.SocketException;

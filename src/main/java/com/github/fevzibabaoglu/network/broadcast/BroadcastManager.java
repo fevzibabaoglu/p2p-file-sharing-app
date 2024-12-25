@@ -1,10 +1,14 @@
-package com.github.fevzibabaoglu;
+package com.github.fevzibabaoglu.network.broadcast;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+
+import com.github.fevzibabaoglu.network.NetworkUtils;
+import com.github.fevzibabaoglu.network.Peer;
+import com.github.fevzibabaoglu.network.PeerNetworkInterface;
 
 public class BroadcastManager {
 
