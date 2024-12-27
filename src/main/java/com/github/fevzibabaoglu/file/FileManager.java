@@ -3,23 +3,34 @@ package com.github.fevzibabaoglu.file;
 import java.io.*;
 import java.nio.file.*;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.github.fevzibabaoglu.network.file_transfer.FileChunkMessage;
+
 public class FileManager {
 
-    private static final int CHUNK_SIZE = 256 * 1024; // 256 KB
+    private final String inputPath;
+    private final String outputPath;
+    private final int chunkSize;
+
+    public FileManager(String inputPath, String outputPath, int chunkSize) {
+        this.inputPath = inputPath;
+        this.outputPath = outputPath;
+        this.chunkSize = chunkSize;
+    }
 
     // Reads a specific chunk from the file to send
-    public byte[] getChunk(String filePath, int chunkSequence) throws IOException {
-        Path path = Paths.get(filePath);
+    public byte[] getChunk(PeerFileMetadata fileMetadata, int chunkIndex) throws IOException {
+        Path path = Paths.get(inputPath, fileMetadata.getFilename());
 
         // Calculate the start position of the requested chunk
-        long startPosition = (long) (chunkSequence - 1) * CHUNK_SIZE;
+        long startPosition = (long) chunkIndex * chunkSize;
 
         // Ensure the file exists and the chunk is within bounds
         if (!Files.exists(path)) {
-            throw new FileNotFoundException("File not found: " + filePath);
+            throw new FileNotFoundException("File not found: " + fileMetadata.getFilename());
         }
 
         long fileSize = Files.size(path);
@@ -28,29 +39,31 @@ public class FileManager {
         }
 
         // Determine the size of the chunk to read (last chunk may be smaller)
-        int bytesToRead = (int) Math.min(CHUNK_SIZE, fileSize - startPosition);
+        int bytesToRead = (int) Math.min(chunkSize, fileSize - startPosition);
         byte[] chunkData = new byte[bytesToRead];
 
         // Read the chunk dynamically
-        try (RandomAccessFile raf = new RandomAccessFile(filePath, "r")) {
-            raf.seek(startPosition); // Move the file pointer to the start of the chunk
+        try (RandomAccessFile raf = new RandomAccessFile(path.toString(), "r")) {
+            raf.seek(startPosition);
             raf.readFully(chunkData);
             return chunkData;
         }
     }
 
     // Save an incoming chunk to disk
-    public void saveChunk(String chunkFileName, byte[] buffer, int bytesRead) throws IOException {
-        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(chunkFileName))) {
-            out.write(buffer, 0, bytesRead);
+    public void saveChunk(FileChunkMessage fileChunkMessage) throws IOException {
+        String chunkFilename = String.format("%s.%s", fileChunkMessage.getFileMetadata().getFilename(), fileChunkMessage.getChunkIndex());
+        Path path = Paths.get(outputPath, chunkFilename);
+        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(path.toString()))) {
+            out.write(fileChunkMessage.getChunkData());
         }
     }
 
     // Merge received chunks into a complete file
-    public void mergeChunks(List<String> chunkPaths, String outputFile) throws IOException {
-        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-            for (String chunkPath : chunkPaths) {
-                Path path = Paths.get(chunkPath);
+    public void mergeChunks(List<String> chunkFilenames, String outputFilename) throws IOException {
+        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFilename))) {
+            for (String chunkPath : chunkFilenames) {
+                Path path = Paths.get(outputPath, chunkPath);
     
                 // Ensure the chunk file exists
                 if (!Files.exists(path)) {
@@ -65,11 +78,34 @@ public class FileManager {
     }
 
     // List files in a directory to be shared
-    public List<String> listSharedFiles(String directoryPath) throws IOException {
-        try (Stream<Path> paths = Files.walk(Paths.get(directoryPath))) {
+    public List<PeerFileMetadata> listSharedFiles() throws IOException {
+        try (Stream<Path> paths = Files.walk(Paths.get(inputPath))) {
             return paths.filter(Files::isRegularFile)
-                        .map(path -> path.toString())
+                        .map(path -> new PeerFileMetadata(path.toString()))
                         .collect(Collectors.toList());
+        }
+    }
+
+    public void createRandomFile(String filename, int size) throws IOException {
+        Path filePath = Paths.get(inputPath, filename);
+        try (FileOutputStream fileOutputStream = new FileOutputStream(filePath.toString())) {
+            byte[] buffer = new byte[1024];
+            Random random = new Random();
+
+            for (int i = 0; i < size / buffer.length; i++) {
+                random.nextBytes(buffer);
+                fileOutputStream.write(buffer);
+            }
+
+            // Handle remaining bytes if size is not a multiple of buffer.length
+            int remainingBytes = size % buffer.length;
+            if (remainingBytes > 0) {
+                buffer = new byte[remainingBytes];
+                random.nextBytes(buffer);
+                fileOutputStream.write(buffer);
+            }
+
+            System.out.println("Random file created: " + filePath);
         }
     }
 }
