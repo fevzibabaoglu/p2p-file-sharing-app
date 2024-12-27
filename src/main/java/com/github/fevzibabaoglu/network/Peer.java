@@ -18,7 +18,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.stream.Collectors;
 
 public class Peer implements Serializable, Cloneable {
 
@@ -139,6 +138,7 @@ public class Peer implements Serializable, Cloneable {
         });
     }
 
+    // Assuming no circular references
     public byte[] serialize() throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {
@@ -179,15 +179,7 @@ public class Peer implements Serializable, Cloneable {
     // Assuming no circular references
     @Override
     public String toString() {
-        return String.format("Peer:{%s}", 
-            interfacePeersMap.entrySet().stream()
-                .filter(entry -> !entry.getValue().isEmpty()) // Exclude entries with empty sets
-                .map(entry -> String.format("Interface:%s=[%s]",
-                    entry.getKey().toString(),
-                    entry.getValue().stream().map(Peer::toString).collect(Collectors.joining(","))
-                ))
-                .collect(Collectors.joining(","))
-        );
+        return interfacePeersMap.toString();
     }
 
     // Assuming no circular references
