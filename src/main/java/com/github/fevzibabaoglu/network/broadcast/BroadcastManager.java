@@ -14,13 +14,14 @@ public class BroadcastManager {
 
     private static final int BROADCAST_PORT = 8000;
     private static final int RESPONSE_PORT = 8001;
-    private static final int BUFFER_SIZE_BYTES = 1024 * 1024;
-    private static final int TTL = 3;
+    private static final int BUFFER_SIZE = 1024 * 1024;
 
+    private final int ttl;
     private Peer localPeer;
     private Peer tempLocalPeer;
 
-    public BroadcastManager() throws SocketException {
+    public BroadcastManager(int ttl) throws SocketException {
+        this.ttl = ttl;
         localPeer = new Peer();
         tempLocalPeer = new Peer();
     }
@@ -37,7 +38,7 @@ public class BroadcastManager {
     // Broadcast a discovery message on all network interfaces
     public void sendBroadcasts(DiscoveryMessage message) throws IOException {
         if (message == null) {
-            message = new DiscoveryMessage(TTL, tempLocalPeer);
+            message = new DiscoveryMessage(ttl, tempLocalPeer);
         }
 
         try (DatagramSocket socket = new DatagramSocket()) {
@@ -73,7 +74,7 @@ public class BroadcastManager {
         try (DatagramSocket socket = new DatagramSocket(BROADCAST_PORT)) {
             socket.setBroadcast(true);
 
-            byte[] buffer = new byte[BUFFER_SIZE_BYTES];
+            byte[] buffer = new byte[BUFFER_SIZE];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
             while (true) {
@@ -110,34 +111,11 @@ public class BroadcastManager {
         }
     }
 
-    // Send a response for incoming discovery broadcast
-    public void sendResponse(DiscoveryMessage message) throws IOException {
-        // Find previous message broadcaster
-        PeerNetworkInterface sendPeerNetworkInterface  = message.getOutInterfaceByIndex(-1);
-        InetAddress sendIPAddress = sendPeerNetworkInterface.getLocalIPAddress();
-
-        // Find local address
-        PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.SubnetMatch(tempLocalPeer, sendIPAddress);
-        InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
-
-        // Remove last hop
-        message.removeLastHopFromInterfaceList();
-
-        System.out.printf("[%s] Response for %s sent/forwarded to %s\n", localIPAddress, message.getOwner().getPeerNetworkInterfaces(), sendIPAddress);
-
-        byte[] messageByte = message.serialize();
-        DatagramPacket responsePacket = new DatagramPacket(messageByte, messageByte.length, sendIPAddress, RESPONSE_PORT);
-        try (DatagramSocket responseSocket = new DatagramSocket()) {
-            responseSocket.send(responsePacket);
-        }
-    }
-
-
     // Listen for incoming responses to the discovery broadcast
     public void listenResponses() throws IOException, ClassNotFoundException {
         try (DatagramSocket socket = new DatagramSocket(RESPONSE_PORT)) {
 
-            byte[] buffer = new byte[BUFFER_SIZE_BYTES];
+            byte[] buffer = new byte[BUFFER_SIZE];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
             while (true) {
@@ -157,6 +135,28 @@ public class BroadcastManager {
                 }
 
             }
+        }
+    }
+
+    // Send a response for incoming discovery broadcast
+    private void sendResponse(DiscoveryMessage message) throws IOException {
+        // Find previous message broadcaster
+        PeerNetworkInterface sendPeerNetworkInterface  = message.getOutInterfaceByIndex(-1);
+        InetAddress sendIPAddress = sendPeerNetworkInterface.getLocalIPAddress();
+
+        // Find local address
+        PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.SubnetMatch(tempLocalPeer, sendIPAddress);
+        InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
+
+        // Remove last hop
+        message.removeLastHopFromInterfaceList();
+
+        System.out.printf("[%s] Response for %s sent/forwarded to %s\n", localIPAddress, message.getOwner().getPeerNetworkInterfaces(), sendIPAddress);
+
+        byte[] messageByte = message.serialize();
+        DatagramPacket responsePacket = new DatagramPacket(messageByte, messageByte.length, sendIPAddress, RESPONSE_PORT);
+        try (DatagramSocket responseSocket = new DatagramSocket()) {
+            responseSocket.send(responsePacket);
         }
     }
 }

@@ -8,12 +8,16 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.stream.Collectors;
 
 public class Peer implements Serializable, Cloneable {
 
@@ -51,6 +55,71 @@ public class Peer implements Serializable, Cloneable {
         }
     }
 
+    // Find the route from thisPeer to targetPeer
+    public List<PeerNetworkInterface> getRouteToPeer(Peer targetPeer) throws SocketException, UnknownHostException {
+        List<PeerNetworkInterface> route = new ArrayList<>();
+        Set<Peer> visitedPeers = new HashSet<>();
+        if (findRouteRecursive(this, targetPeer, route, visitedPeers)) {
+            return route;
+        }
+        return null;
+    }
+
+    private static boolean findRouteRecursive(Peer currentPeer, Peer targetPeer, List<PeerNetworkInterface> route, Set<Peer> visitedPeers) throws SocketException, UnknownHostException {
+        // Avoid revisiting peers
+        if (!visitedPeers.add(currentPeer)) {
+            return false;
+        }
+
+        // Check if the current peer is the target
+        if (currentPeer.equals(targetPeer)) {
+            return true;
+        }
+
+        // Process all known peers of the current peer
+        for (Map.Entry<PeerNetworkInterface, Set<Peer>> entry : currentPeer.interfacePeersMap.entrySet()) {
+            for (Peer knownPeer : entry.getValue()) {
+                // Find the in-interface of the knownPeer that connects it to the currentPeer
+                PeerNetworkInterface inInterface = NetworkUtils.SubnetMatch(knownPeer, entry.getKey().getLocalIPAddress());
+                if (inInterface != null) {
+                    route.add(inInterface);
+                    if (findRouteRecursive(knownPeer, targetPeer, route, visitedPeers)) {
+                        return true;
+                    }
+                    route.remove(route.size() - 1); // Backtrack
+                }
+            }
+        }
+        return false;
+    }
+
+    // Assuming no circular references
+    public List<Peer> getReachablePeers() {
+        // Use a Set to avoid duplicates and a Stack for DFS traversal
+        Set<Peer> visited = new HashSet<>();
+        Stack<Peer> stack = new Stack<>();
+        List<Peer> reachablePeers = new ArrayList<>();
+
+        // Start DFS from the local peer
+        stack.push(this);
+        visited.add(this);
+
+        while (!stack.isEmpty()) {
+            Peer current = stack.pop();
+            for (Set<Peer> neighbors : current.interfacePeersMap.values()) {
+                for (Peer neighbor : neighbors) {
+                    if (!visited.contains(neighbor)) {
+                        visited.add(neighbor);
+                        reachablePeers.add(neighbor);
+                        stack.push(neighbor);
+                    }
+                }
+            }
+        }
+
+        return reachablePeers.isEmpty() ? null : reachablePeers;
+    }
+
     // Assuming no circular references
     public void mergePeer(Peer newPeer) {
         newPeer.interfacePeersMap.forEach((networkInterface, newPeers) -> {
@@ -69,6 +138,7 @@ public class Peer implements Serializable, Cloneable {
         });
     }
 
+    // Assuming no circular references
     public byte[] serialize() throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {
@@ -109,15 +179,7 @@ public class Peer implements Serializable, Cloneable {
     // Assuming no circular references
     @Override
     public String toString() {
-        return String.format("Peer:{%s}", 
-            interfacePeersMap.entrySet().stream()
-                .filter(entry -> !entry.getValue().isEmpty()) // Exclude entries with empty sets
-                .map(entry -> String.format("Interface:%s=[%s]",
-                    entry.getKey().toString(),
-                    entry.getValue().stream().map(Peer::toString).collect(Collectors.joining(","))
-                ))
-                .collect(Collectors.joining(","))
-        );
+        return interfacePeersMap.toString();
     }
 
     // Assuming no circular references

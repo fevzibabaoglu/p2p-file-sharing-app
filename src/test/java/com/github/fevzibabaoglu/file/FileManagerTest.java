@@ -1,6 +1,9 @@
 package com.github.fevzibabaoglu.file;
 
 import org.junit.jupiter.api.*;
+
+import com.github.fevzibabaoglu.network.file_transfer.FileChunkMessage;
+
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -8,44 +11,45 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class FileManagerTest {
 
-    private static final String ORIGINAL_FILE = "test-image.jpg"; // Path to an image file for testing
-    private static final String CHUNK_PREFIX = "test-image.chunk"; // Prefix for chunk files
-    private static final String MERGED_FILE = "merged-test-image.jpg"; // Path for the merged output file
+    private static final String INPUT_PATH = "";
+    private static final String OUTPUT_PATH = "";
+    private static final int CHUNK_SIZE = 256 * 1024;
+    private static final String ORIGINAL_FILE = "test-file"; // Path to a file for testing
+    private static final String MERGED_FILE = "merged-test-file"; // Path for the merged output file
+
     private FileManager fileManager;
+    private PeerFileMetadata fileMetadata;
 
     @BeforeEach
     public void setUp() throws IOException {
-        fileManager = new FileManager();
+        fileManager = new FileManager(INPUT_PATH, OUTPUT_PATH, CHUNK_SIZE);
 
         // Create a dummy file if ORIGINAL_FILE doesn't exist
         Path path = Paths.get(ORIGINAL_FILE);
         if (!Files.exists(path)) {
-            try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(ORIGINAL_FILE))) {
-                byte[] data = new byte[1024 * 1024]; // 1 MB dummy data
-                new Random().nextBytes(data);
-                out.write(data);
-            }
+            fileManager.createRandomFile(ORIGINAL_FILE, 1024 * 1024 + 15);
         }
+        fileMetadata = new PeerFileMetadata(ORIGINAL_FILE);
     }
 
     @Test
     public void testFileChunkingAndMerging() throws IOException {
-        // Split the file into chunks dynamically
-        int chunkSequence = 1;
+        int chunkIndex = 0;
         List<String> chunkPaths = new ArrayList<>();
 
         while (true) {
             try {
                 // Get the next chunk
-                byte[] chunkData = fileManager.getChunk(ORIGINAL_FILE, chunkSequence);
-
+                byte[] chunkData = fileManager.getChunk(fileMetadata, chunkIndex);
+                FileChunkMessage fileChunkMessage = new FileChunkMessage(null, null, fileMetadata, chunkIndex, chunkData);
+                String chunkFileName = fileChunkMessage.getFilename();
+                
                 // Save the chunk as if it were received
-                String chunkFileName = CHUNK_PREFIX + chunkSequence;
-                fileManager.saveChunk(chunkFileName, chunkData, chunkData.length);
+                fileManager.saveChunk(fileChunkMessage);
 
                 // Track the chunk path
                 chunkPaths.add(chunkFileName);
-                chunkSequence++;
+                chunkIndex++;
             } catch (IllegalArgumentException e) {
                 // End of file reached
                 break;
@@ -62,7 +66,7 @@ public class FileManagerTest {
         assertTrue(Files.exists(mergedFilePath), "Merged file was not created.");
 
         // Verify the size of the merged file matches the original
-        long originalSize = Files.size(Paths.get(ORIGINAL_FILE));
+        long originalSize = Files.size(Paths.get(fileMetadata.getFilename()));
         long mergedSize = Files.size(mergedFilePath);
         assertEquals(originalSize, mergedSize, "Merged file size does not match the original.");
 
