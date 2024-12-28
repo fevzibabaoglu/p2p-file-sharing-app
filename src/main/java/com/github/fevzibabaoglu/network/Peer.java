@@ -117,7 +117,7 @@ public class Peer implements Serializable, Cloneable {
             }
         }
 
-        return reachablePeers.isEmpty() ? null : reachablePeers;
+        return reachablePeers;
     }
 
     // Assuming no circular references

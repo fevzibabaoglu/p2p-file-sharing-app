@@ -84,7 +84,12 @@ public class FileTransferManager {
 
     // Forwards a chunk to the next peer
     public void forwardChunk(FileChunkMessage chunkMessage) throws IOException {
-        PeerNetworkInterface targetPeerNetworkInterface = localPeer.getRouteToPeer(chunkMessage.getReceiver()).get(0);
+        List<PeerNetworkInterface> route = localPeer.getRouteToPeer(chunkMessage.getReceiver());
+        if (route == null) {
+            return;
+        }
+
+        PeerNetworkInterface targetPeerNetworkInterface = route.get(0);
         InetAddress targetIPAddress = targetPeerNetworkInterface.getLocalIPAddress();
 
         PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(localPeer, targetIPAddress);
