@@ -38,7 +38,7 @@ public class PeerNetworkInterface implements Serializable, Cloneable {
             }
 
             InetAddress broadcastIPAddress = interfaceAddress.getBroadcast();
-            if (broadcastIPAddress == null) {
+            if (broadcastIPAddress == null || broadcastIPAddress.getHostAddress().equals("0.0.0.0")) {
                 continue;
             }
 

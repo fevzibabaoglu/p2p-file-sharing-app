@@ -190,7 +190,7 @@ public class Peer implements Serializable, Cloneable {
             }
             Set<String> clonedMACs = new CopyOnWriteArraySet<>();
             for (String mac : macAddresses) {
-                clonedMACs.add(new String(mac));
+                clonedMACs.add(mac);
             }
             Set<PeerFileMetadata> clonedFileMetadatas = new CopyOnWriteArraySet<>();
             for (PeerFileMetadata fileMetadata : fileMetadatas) {
