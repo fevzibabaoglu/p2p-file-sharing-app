@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -78,11 +79,11 @@ public class FileManager {
     }
 
     // List files in a directory to be shared
-    public List<PeerFileMetadata> listSharedFiles() throws IOException {
+    public Set<PeerFileMetadata> listSharedFiles() throws IOException {
         try (Stream<Path> paths = Files.walk(Paths.get(inputPath))) {
             return paths.filter(Files::isRegularFile)
                         .map(path -> new PeerFileMetadata(path.toString()))
-                        .collect(Collectors.toList());
+                        .collect(Collectors.toSet());
         }
     }
 

@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 
+import com.github.fevzibabaoglu.file.FileManager;
 import com.github.fevzibabaoglu.network.NetworkUtils;
 import com.github.fevzibabaoglu.network.Peer;
 import com.github.fevzibabaoglu.network.PeerNetworkInterface;
@@ -16,19 +16,21 @@ public class BroadcastManager {
     private static final int RESPONSE_PORT = 8001;
     private static final int BUFFER_SIZE = 1024 * 1024;
 
+    private final FileManager fileManager;
     private final int ttl;
     private Peer localPeer;
     private Peer tempLocalPeer;
 
-    public BroadcastManager(int ttl) throws SocketException {
+    public BroadcastManager(FileManager fileManager, int ttl) throws IOException {
+        this.fileManager = fileManager;
         this.ttl = ttl;
-        localPeer = new Peer();
-        tempLocalPeer = new Peer();
+        clearPeerCache();
     }
 
-    public void clearPeerCache() throws SocketException {
+    public void clearPeerCache() throws IOException {
         localPeer = new Peer();
         tempLocalPeer = new Peer();
+        tempLocalPeer.setFileMetadatas(fileManager.listSharedFiles());
     }
 
     public Peer getLocalPeer() {

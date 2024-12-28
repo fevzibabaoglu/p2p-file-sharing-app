@@ -7,7 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
-public class PeerFileMetadata implements Serializable {
+public class PeerFileMetadata implements Serializable, Cloneable {
     
     private final String filename;
     private final byte[] hash;
@@ -44,6 +44,17 @@ public class PeerFileMetadata implements Serializable {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(truncatedData);
              ObjectInputStream ois = new ObjectInputStream(bis)) {
             return (PeerFileMetadata) ois.readObject();
+        }
+    }
+
+    @Override
+    public PeerFileMetadata clone() {
+        try {
+            return new PeerFileMetadata(
+                this.filename
+            );
+        } catch (Exception e) {
+            throw new AssertionError("Cloning PeerNetworkInterface failed");
         }
     }
 

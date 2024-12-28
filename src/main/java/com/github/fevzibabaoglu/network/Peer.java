@@ -19,16 +19,20 @@ import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import com.github.fevzibabaoglu.file.PeerFileMetadata;
+
 public class Peer implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 1L;
 
-    private final Map<PeerNetworkInterface, Set<Peer>> interfacePeersMap;
     private final Set<String> macAddresses;
+    private final Map<PeerNetworkInterface, Set<Peer>> interfacePeersMap;
+    private Set<PeerFileMetadata> fileMetadatas;
 
     public Peer() throws SocketException {
         interfacePeersMap = new ConcurrentHashMap<>();
         macAddresses = new CopyOnWriteArraySet<>();
+        fileMetadatas = null;
 
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         while (interfaces.hasMoreElements()) {
@@ -41,9 +45,18 @@ public class Peer implements Serializable, Cloneable {
         }
     }
 
-    private Peer(Map<PeerNetworkInterface, Set<Peer>> interfacePeersMap, Set<String> macAddresses) {
+    private Peer(Map<PeerNetworkInterface, Set<Peer>> interfacePeersMap, Set<String> macAddresses, Set<PeerFileMetadata> fileMetadatas) {
         this.interfacePeersMap = interfacePeersMap;
         this.macAddresses = macAddresses;
+        this.fileMetadatas = fileMetadatas;
+    }
+
+    public Set<PeerFileMetadata> getFileMetadatas() {
+        return fileMetadatas;
+    }
+
+    public void setFileMetadatas(Set<PeerFileMetadata> fileMetadatas) {
+        this.fileMetadatas = fileMetadatas;
     }
 
     public Set<PeerNetworkInterface> getPeerNetworkInterfaces() {
@@ -179,7 +192,11 @@ public class Peer implements Serializable, Cloneable {
             for (String mac : macAddresses) {
                 clonedMACs.add(new String(mac));
             }
-            return new Peer(clonedMap, clonedMACs);
+            Set<PeerFileMetadata> clonedFileMetadatas = new CopyOnWriteArraySet<>();
+            for (PeerFileMetadata fileMetadata : fileMetadatas) {
+                clonedFileMetadatas.add(fileMetadata.clone());
+            }
+            return new Peer(clonedMap, clonedMACs, clonedFileMetadatas);
         } catch (Exception e) {
             throw new AssertionError("Cloning Peer failed");
         }
