@@ -1,10 +1,21 @@
 package com.github.fevzibabaoglu.network;
 
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class NetworkUtils {
+
+    public static String getMACAddress(NetworkInterface networkInterface) throws SocketException {
+        byte[] macAddress = networkInterface.getHardwareAddress();
+        return macAddress == null ? null :
+            IntStream.range(0, macAddress.length)
+                .mapToObj(i -> String.format("%02X", macAddress[i]))
+                .collect(Collectors.joining(":"));
+    }
 
     // Find the PeerNetworkInterface of the subnet that the localIP is in
     public static PeerNetworkInterface ipMatch(Peer peer, InetAddress localIPAddress) {

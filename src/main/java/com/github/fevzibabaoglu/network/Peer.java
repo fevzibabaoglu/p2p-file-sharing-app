@@ -24,21 +24,26 @@ public class Peer implements Serializable, Cloneable {
     private static final long serialVersionUID = 1L;
 
     private final Map<PeerNetworkInterface, Set<Peer>> interfacePeersMap;
+    private final Set<String> macAddresses;
 
     public Peer() throws SocketException {
         interfacePeersMap = new ConcurrentHashMap<>();
+        macAddresses = new CopyOnWriteArraySet<>();
+
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         while (interfaces.hasMoreElements()) {
             NetworkInterface networkInterface = interfaces.nextElement();
             PeerNetworkInterface peerNetworkInterface = new PeerNetworkInterface(networkInterface);
             if (peerNetworkInterface.isUpIPv4Interface()) {
                 interfacePeersMap.put(peerNetworkInterface, new CopyOnWriteArraySet<>());
+                macAddresses.add(NetworkUtils.getMACAddress(networkInterface));
             }
         }
     }
 
-    private Peer(Map<PeerNetworkInterface, Set<Peer>> interfacePeersMap) {
+    private Peer(Map<PeerNetworkInterface, Set<Peer>> interfacePeersMap, Set<String> macAddresses) {
         this.interfacePeersMap = interfacePeersMap;
+        this.macAddresses = macAddresses;
     }
 
     public Set<PeerNetworkInterface> getPeerNetworkInterfaces() {
@@ -170,7 +175,11 @@ public class Peer implements Serializable, Cloneable {
                 Set<Peer> clonedSet = new CopyOnWriteArraySet<>(entry.getValue().stream().map(Peer::clone).toList());
                 clonedMap.put(key, clonedSet);
             }
-            return new Peer(clonedMap);
+            Set<String> clonedMACs = new CopyOnWriteArraySet<>();
+            for (String mac : macAddresses) {
+                clonedMACs.add(new String(mac));
+            }
+            return new Peer(clonedMap, clonedMACs);
         } catch (Exception e) {
             throw new AssertionError("Cloning Peer failed");
         }
@@ -192,11 +201,11 @@ public class Peer implements Serializable, Cloneable {
             return false;
         }
         Peer other = (Peer) obj;
-        return interfacePeersMap.keySet().equals(other.interfacePeersMap.keySet());
+        return macAddresses.equals(other.macAddresses);
     }
 
     @Override
     public int hashCode() {
-        return interfacePeersMap.keySet().hashCode();
+        return macAddresses.hashCode();
     }
 }
