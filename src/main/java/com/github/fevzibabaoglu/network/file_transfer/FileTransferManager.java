@@ -61,7 +61,7 @@ public class FileTransferManager {
     private void handleIncomingConnection(Socket incomingSocket) throws IOException, ClassNotFoundException {
         try (ObjectInputStream objectInputStream = new ObjectInputStream(incomingSocket.getInputStream())) {
             InetAddress receiveIPAddress = incomingSocket.getInetAddress();
-            PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.SubnetMatch(localPeer, receiveIPAddress);
+            PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(localPeer, receiveIPAddress);
             InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
 
             while (true) {
@@ -87,7 +87,7 @@ public class FileTransferManager {
         PeerNetworkInterface targetPeerNetworkInterface = localPeer.getRouteToPeer(chunkMessage.getReceiver()).get(0);
         InetAddress targetIPAddress = targetPeerNetworkInterface.getLocalIPAddress();
 
-        PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.SubnetMatch(localPeer, targetIPAddress);
+        PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(localPeer, targetIPAddress);
         InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
 
         try (Socket outputSocket = new Socket(targetIPAddress, LISTENING_PORT);
@@ -110,7 +110,7 @@ public class FileTransferManager {
         PeerNetworkInterface targetPeerNetworkInterface = route.get(0);
         InetAddress targetIPAddress = targetPeerNetworkInterface.getLocalIPAddress();
 
-        PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.SubnetMatch(localPeer, targetIPAddress);
+        PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(localPeer, targetIPAddress);
         InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
 
         try (Socket outputSocket = new Socket(targetIPAddress, LISTENING_PORT);

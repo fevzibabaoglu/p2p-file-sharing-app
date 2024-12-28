@@ -80,7 +80,7 @@ public class Peer implements Serializable, Cloneable {
         for (Map.Entry<PeerNetworkInterface, Set<Peer>> entry : currentPeer.interfacePeersMap.entrySet()) {
             for (Peer knownPeer : entry.getValue()) {
                 // Find the in-interface of the knownPeer that connects it to the currentPeer
-                PeerNetworkInterface inInterface = NetworkUtils.SubnetMatch(knownPeer, entry.getKey().getLocalIPAddress());
+                PeerNetworkInterface inInterface = NetworkUtils.subnetMatch(knownPeer, entry.getKey().getLocalIPAddress());
                 if (inInterface != null) {
                     route.add(inInterface);
                     if (findRouteRecursive(knownPeer, targetPeer, route, visitedPeers)) {

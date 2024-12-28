@@ -82,7 +82,7 @@ public class BroadcastManager {
                 DiscoveryMessage receivedMessage = DiscoveryMessage.deserialize(packet.getData(), packet.getLength());
 
                 InetAddress receiveIPAddress = packet.getAddress();
-                PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.SubnetMatch(tempLocalPeer, receiveIPAddress);
+                PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(tempLocalPeer, receiveIPAddress);
                 InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
 
                 // If receiver is the sender
@@ -123,11 +123,11 @@ public class BroadcastManager {
                 DiscoveryMessage receivedMessage = DiscoveryMessage.deserialize(packet.getData(), packet.getLength());
 
                 InetAddress receivedIPAddress = packet.getAddress();
-                PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.SubnetMatch(tempLocalPeer, receivedIPAddress);
+                PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(tempLocalPeer, receivedIPAddress);
                 InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
 
                 // If receivedMessage owner is the localPeer, update the localPeer with new info, else forward response
-                if (NetworkUtils.IPMatch(receivedMessage.getOwner(), localIPAddress) != null) {
+                if (NetworkUtils.ipMatch(receivedMessage.getOwner(), localIPAddress) != null) {
                     localPeer.mergePeer(receivedMessage.getOwner());
                     System.out.printf("[%s] Discovered new peers\n", localIPAddress);
                 } else {
@@ -145,7 +145,7 @@ public class BroadcastManager {
         InetAddress sendIPAddress = sendPeerNetworkInterface.getLocalIPAddress();
 
         // Find local address
-        PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.SubnetMatch(tempLocalPeer, sendIPAddress);
+        PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(tempLocalPeer, sendIPAddress);
         InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
 
         // Remove last hop
