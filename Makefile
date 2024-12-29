@@ -2,12 +2,16 @@
 IMAGE_NAME = p2p_app
 COMPOSE_FILE = docker-compose.yml
 
+# Allow local Docker containers to use X server
+x11_setup:
+	xhost +local:docker
+
 # Build the Docker image
 build:
 	docker build -t $(IMAGE_NAME) .
 
 # Start the services using Docker Compose
-up: build
+up: x11_setup build
 	docker-compose -f $(COMPOSE_FILE) up
 
 # Stop the services

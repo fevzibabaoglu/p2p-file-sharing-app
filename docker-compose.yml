@@ -24,6 +24,10 @@ services:
     networks:
       network_4:
       network_5:
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
   peer_6:
     image: p2p_app
     networks:
