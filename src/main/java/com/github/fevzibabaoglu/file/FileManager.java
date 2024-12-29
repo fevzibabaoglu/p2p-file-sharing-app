@@ -12,19 +12,24 @@ import com.github.fevzibabaoglu.network.file_transfer.FileChunkMessage;
 
 public class FileManager {
 
-    private final String inputPath;
-    private final String outputPath;
+    private String sourcePath;
+    private String destinationPath;
     private final int chunkSize;
 
-    public FileManager(String inputPath, String outputPath, int chunkSize) {
-        this.inputPath = inputPath;
-        this.outputPath = outputPath;
+    public FileManager(String sourcePath, String destinationPath, int chunkSize) {
+        this.sourcePath = sourcePath;
+        this.destinationPath = destinationPath;
         this.chunkSize = chunkSize;
+    }
+
+    public void setPaths(String inputPath, String outputPath) {
+        this.sourcePath = inputPath;
+        this.destinationPath = outputPath;
     }
 
     // Reads a specific chunk from the file to send
     public byte[] getChunk(PeerFileMetadata fileMetadata, int chunkIndex) throws IOException {
-        Path path = Paths.get(inputPath, fileMetadata.getFilename());
+        Path path = Paths.get(sourcePath, fileMetadata.getFilename());
 
         // Calculate the start position of the requested chunk
         long startPosition = (long) chunkIndex * chunkSize;
@@ -54,7 +59,7 @@ public class FileManager {
     // Save an incoming chunk to disk
     public void saveChunk(FileChunkMessage fileChunkMessage) throws IOException {
         String chunkFilename = String.format("%s.%s", fileChunkMessage.getFileMetadata().getFilename(), fileChunkMessage.getChunkIndex());
-        Path path = Paths.get(outputPath, chunkFilename);
+        Path path = Paths.get(destinationPath, chunkFilename);
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(path.toString()))) {
             out.write(fileChunkMessage.getChunkData());
         }
@@ -64,7 +69,7 @@ public class FileManager {
     public void mergeChunks(List<String> chunkFilenames, String outputFilename) throws IOException {
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFilename))) {
             for (String chunkPath : chunkFilenames) {
-                Path path = Paths.get(outputPath, chunkPath);
+                Path path = Paths.get(destinationPath, chunkPath);
     
                 // Ensure the chunk file exists
                 if (!Files.exists(path)) {
@@ -80,7 +85,7 @@ public class FileManager {
 
     // List files in a directory to be shared
     public Set<PeerFileMetadata> listSharedFiles() throws IOException {
-        try (Stream<Path> paths = Files.walk(Paths.get(inputPath))) {
+        try (Stream<Path> paths = Files.walk(Paths.get(sourcePath))) {
             return paths.filter(Files::isRegularFile)
                         .map(path -> new PeerFileMetadata(path.toString()))
                         .collect(Collectors.toSet());
@@ -88,7 +93,7 @@ public class FileManager {
     }
 
     public void createRandomFile(String filename, int size) throws IOException {
-        Path filePath = Paths.get(inputPath, filename);
+        Path filePath = Paths.get(sourcePath, filename);
         try (FileOutputStream fileOutputStream = new FileOutputStream(filePath.toString())) {
             byte[] buffer = new byte[1024];
             Random random = new Random();
