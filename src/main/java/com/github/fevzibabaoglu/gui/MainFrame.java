@@ -1,24 +1,43 @@
 package com.github.fevzibabaoglu.gui;
 
-import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
+import javax.swing.*;
+
+import com.github.fevzibabaoglu.App;
 
 public class MainFrame extends JFrame {
 
-    public MainFrame() {
+    private final App app;
+    private final FilesPanel filesPanel;
+    private final DownloadPanel downloadPanel;
+
+    public MainFrame(App app) {
+        this.app = app;
+
         // Set up the main frame
         setTitle("P2P File Sharing Application");
         setSize(800, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+
+        // Customize close operation
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                handleExit();
+            }
+        });
 
         // Create menu bar
         JMenuBar menuBar = createMenuBar();
         setJMenuBar(menuBar);
 
         // Add panels
-        FilesPanel filesPanel = new FilesPanel();
-        DownloadPanel downloadPanel = new DownloadPanel();
+        filesPanel = new FilesPanel(app);
+        downloadPanel = new DownloadPanel(app);
 
         // Set layout
         JPanel contentPanel = new JPanel(new BorderLayout());
@@ -28,7 +47,6 @@ public class MainFrame extends JFrame {
     }
 
     private JMenuBar createMenuBar() {
-
         // Files Menu
         JMenuItem connectItem = new JMenuItem("Connect");
         connectItem.addActionListener(e -> handleConnect());
@@ -37,7 +55,7 @@ public class MainFrame extends JFrame {
         disconnectItem.addActionListener(e -> handleDisconnect());
 
         JMenuItem exitItem = new JMenuItem("Exit");
-        exitItem.addActionListener(e -> System.exit(0));
+        exitItem.addActionListener(e -> handleExit());
 
         JMenu filesMenu = new JMenu("Files");
         filesMenu.add(connectItem);
@@ -58,15 +76,29 @@ public class MainFrame extends JFrame {
         return menuBar;
     }
 
+    private void showAboutDialog() {
+        String devInfo = "P2P File Sharing Application\nDeveloped by Fevzi Babaoglu (20210702020)";
+        GUIUtils.showMessageDialog(this, devInfo, "About");
+    }
+
     private void handleConnect() {
-        GUIUtils.showMessageDialog(this, "Connecting to the network...", "Connect");
+        app.initializeThreads();
     }
 
     private void handleDisconnect() {
-        GUIUtils.showMessageDialog(this, "Disconnecting from the network...", "Disconnect");
+        app.shutdownThreads();
     }
 
-    private void showAboutDialog() {
-        GUIUtils.showMessageDialog(this, "P2P File Sharing Application\nDeveloped by Fevzi Babaoglu (20210702020)", "About");
+    private void handleExit() {
+        handleDisconnect();
+        System.exit(0);
+    }
+
+    public FilesPanel getFilesPanel() {
+        return filesPanel;
+    }
+
+    public DownloadPanel getDownloadPanel() {
+        return downloadPanel;
     }
 }
