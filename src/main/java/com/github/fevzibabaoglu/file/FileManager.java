@@ -87,7 +87,7 @@ public class FileManager {
     public Set<PeerFileMetadata> listSharedFiles() throws IOException {
         try (Stream<Path> paths = Files.walk(Paths.get(sourcePath))) {
             return paths.filter(Files::isRegularFile)
-                        .map(path -> new PeerFileMetadata(path.toString()))
+                        .map(path -> new PeerFileMetadata(path.getFileName().toString()))
                         .collect(Collectors.toSet());
         }
     }
