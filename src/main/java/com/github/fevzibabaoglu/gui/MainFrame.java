@@ -7,6 +7,8 @@ import java.awt.event.WindowEvent;
 import javax.swing.*;
 
 import com.github.fevzibabaoglu.App;
+import com.github.fevzibabaoglu.file.FileManager;
+import com.github.fevzibabaoglu.network.file_transfer.FileTransferManager;
 
 public class MainFrame extends JFrame {
 
@@ -14,7 +16,7 @@ public class MainFrame extends JFrame {
     private final FilesPanel filesPanel;
     private final DownloadPanel downloadPanel;
 
-    public MainFrame(App app) {
+    public MainFrame(App app, FileManager fileManager, FileTransferManager fileTransferManager) {
         this.app = app;
 
         // Set up the main frame
@@ -37,7 +39,7 @@ public class MainFrame extends JFrame {
 
         // Add panels
         filesPanel = new FilesPanel(app);
-        downloadPanel = new DownloadPanel(app);
+        downloadPanel = new DownloadPanel(app, fileManager, fileTransferManager);
 
         // Set layout
         JPanel contentPanel = new JPanel(new BorderLayout());

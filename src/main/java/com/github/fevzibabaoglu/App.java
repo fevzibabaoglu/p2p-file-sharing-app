@@ -15,14 +15,15 @@ import com.github.fevzibabaoglu.network.file_transfer.FileTransferManager;
 
 public class App {
 
+    public static final int CHUNK_SIZE = 256 * 1024;
     private static final int TTL = 3;
-    private static final int CHUNK_SIZE = 256 * 1024;
     private static final int BROADCAST_INTERVAL = 20000;
 
     private final ExecutorService threadPool;
     private final FileManager fileManager;
     private final BroadcastManager broadcastManager;
     private final FileTransferManager fileTransferManager;
+
     private final AtomicReference<Peer> localPeerRef;
     private final AtomicReference<MainFrame> mainFrameRef;
     
@@ -37,6 +38,7 @@ public class App {
         fileManager = new FileManager(this.sourcePath, this.destinationPath, CHUNK_SIZE);
         broadcastManager = new BroadcastManager(fileManager, TTL);
         fileTransferManager = new FileTransferManager(fileManager);
+
         localPeerRef = new AtomicReference<>();
         mainFrameRef = new AtomicReference<>();
     }
@@ -61,6 +63,14 @@ public class App {
 
     public Peer getLocalPeer() {
         return localPeerRef.get();
+    }
+
+    public FileManager getFileManager() {
+        return fileManager;
+    }
+
+    public FileTransferManager getFileTransferManager() {
+        return fileTransferManager;
     }
 
     public void initializeThreads() {
@@ -124,9 +134,10 @@ public class App {
         System.out.println("Starting the GUI app...");
 
         try {
-            App app = new App(System.getProperty("user.dir"), System.getProperty("user.dir"));
+            App app = new App("/home", "/home");
             SwingUtilities.invokeLater(() -> {
-                app.mainFrameRef.set(new MainFrame(app));
+                MainFrame mainFrame = new MainFrame(app, app.getFileManager(), app.getFileTransferManager());
+                app.mainFrameRef.set(mainFrame);
                 app.mainFrameRef.get().setVisible(true);
             });
         } catch (Exception e) {
@@ -141,9 +152,10 @@ public class App {
         try {
             app = new App("/home", "/home");
 
-            app.fileManager.createRandomFile("test1", 1024 * 1024 + 15);
-            app.fileManager.createRandomFile("test2", 123 * 1024);
-            app.fileManager.createRandomFile("test3", 756 * 1024);
+            app.fileManager.createRandomFile("test1", 1024 * 1024 + 15, 5);
+            app.fileManager.createRandomFile("test2", 123 * 1024, 5);
+            app.fileManager.createRandomFile("test3", 756 * 1024, 5);
+            app.fileManager.createRandomFile("test4", 11 * 1024 * 1024 + 153, 5);
 
             Thread.sleep(5000);
             app.initializeThreads();   

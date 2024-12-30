@@ -2,6 +2,13 @@ package com.github.fevzibabaoglu.gui;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -10,17 +17,25 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import com.github.fevzibabaoglu.App;
+import com.github.fevzibabaoglu.file.FileManager;
 import com.github.fevzibabaoglu.file.PeerFileMetadata;
 import com.github.fevzibabaoglu.network.Peer;
+import com.github.fevzibabaoglu.network.PeerNetworkInterface;
+import com.github.fevzibabaoglu.network.file_transfer.FileTransferManager;
 
 public class DownloadPanel extends JPanel {
 
     private final App app;
+    private final FileManager fileManager;
+    private final FileTransferManager fileTransferManager;
 
     private final JTree peerTree;
 
-    public DownloadPanel(App app) {
+    public DownloadPanel(App app, FileManager fileManager, FileTransferManager fileTransferManager) {
         this.app = app;
+        this.fileManager = fileManager;
+        this.fileTransferManager = fileTransferManager;
+        
         peerTree = new JTree(new DefaultTreeModel(new DefaultMutableTreeNode("Peers")));
         configurePeerTree();
 
@@ -79,7 +94,11 @@ public class DownloadPanel extends JPanel {
         downloadItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
-                handleDownloadAction(node);
+                try {
+                    handleDownloadAction(node);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -87,9 +106,56 @@ public class DownloadPanel extends JPanel {
         contextMenu.show(peerTree, e.getX(), e.getY());
     }
 
-    private void handleDownloadAction(DefaultMutableTreeNode node) {
-        PeerFileMetadata fileMetadata = (PeerFileMetadata) node.getUserObject();
-        // TODO Add file download logic
+    private void handleDownloadAction(DefaultMutableTreeNode node) throws IOException {
+        PeerFileMetadata requestedFileMetadata = (PeerFileMetadata) node.getUserObject();
+        List<Peer> peersPossessingFile = new ArrayList<>();
+        List<PeerFileMetadata> fileMetadatas = new ArrayList<>();
+        List<String> chunkFilenames = new ArrayList<>();
+
+        for (Peer peer : app.getLocalPeer().getReachablePeers()) {
+            for (PeerFileMetadata fileMetadata : peer.getFileMetadatas()) {
+                if (fileMetadata.equals(requestedFileMetadata)) {
+                    peersPossessingFile.add(peer);
+                    fileMetadatas.add(fileMetadata);
+                    break;
+                }
+            }
+        }
+
+        int numChunks = (int) Math.ceil((double) requestedFileMetadata.getFileSize() / App.CHUNK_SIZE);
+        int numPeer = peersPossessingFile.size();
+        int baseChunksPerPeer = numChunks / numPeer;
+        int extraChunks = numChunks % numPeer;
+
+        List<Integer> chunkIndices = IntStream.range(0, numChunks).boxed().collect(Collectors.toList());
+        Collections.shuffle(chunkIndices);
+
+        List<List<Integer>> chunksPerPeer = IntStream.range(0, numPeer)
+            .mapToObj(i -> {
+                int startIndex = i * baseChunksPerPeer + Math.min(i, extraChunks);
+                int endIndex = startIndex + baseChunksPerPeer + (i < extraChunks ? 1 : 0);
+                return chunkIndices.subList(startIndex, endIndex);
+            })
+            .collect(Collectors.toList());
+
+        for (int i = 0; i < numPeer; i++) {
+            Peer peer = peersPossessingFile.get(i);
+            PeerFileMetadata fileMetadata = fileMetadatas.get(i);
+            List<Integer> chunks = chunksPerPeer.get(i);
+            if (!chunks.isEmpty()) {
+                fileTransferManager.requestChunks(peer, fileMetadata, new HashSet<>(chunks));
+                chunkFilenames.addAll(chunks.stream().map(chunk -> String.format("%s.%s", fileMetadata.getFilename(), chunk)).toList());
+            }
+        }
+
+        new Thread(() -> {
+            try {
+                String outputFilename = requestedFileMetadata.getFilename();
+                fileManager.mergeChunks(chunkFilenames, outputFilename);
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     public void updatePeerFileTree() {
@@ -99,7 +165,7 @@ public class DownloadPanel extends JPanel {
         Peer localPeer = app.getLocalPeer();
         if (localPeer != null) {
             for (Peer peer : localPeer.getReachablePeers()) {
-                DefaultMutableTreeNode peerTree = new DefaultMutableTreeNode(peer.getPeerNetworkInterfaces());
+                DefaultMutableTreeNode peerTree = new DefaultMutableTreeNode(peer);
                 for (PeerFileMetadata file : peer.getFileMetadatas()) {
                     peerTree.add(new DefaultMutableTreeNode(file));
                 }
@@ -124,6 +190,13 @@ public class DownloadPanel extends JPanel {
                 setIcon(getDefaultClosedIcon());
             } else if (leaf) {
                 setIcon(getDefaultLeafIcon()); 
+            }
+
+            // Change peer text to show peer network interfaces
+            Object userObject = node.getUserObject();
+            if (userObject instanceof Peer) {
+                Peer peer = (Peer) userObject;
+                setText(peer.getPeerNetworkInterfaces().stream().map(PeerNetworkInterface::toString).toList().toString());
             }
 
             return this;
