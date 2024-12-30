@@ -2,7 +2,9 @@ package com.github.fevzibabaoglu.file;
 
 import java.io.*;
 import java.nio.file.*;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -57,23 +59,24 @@ public class FileManager {
     }
 
     // Save an incoming chunk to disk
-    public void saveChunk(FileChunkMessage fileChunkMessage) throws IOException {
+    public PeerFileMetadata saveChunk(FileChunkMessage fileChunkMessage) throws IOException, NoSuchAlgorithmException {
         String chunkFilename = String.format("%s.%s", fileChunkMessage.getFileMetadata().getFilename(), fileChunkMessage.getChunkIndex());
         Path path = Paths.get(destinationPath, chunkFilename);
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(path.toString()))) {
             out.write(fileChunkMessage.getChunkData());
         }
+        return new PeerFileMetadata(path);
     }
 
     // Merge received chunks into a complete file
-    public void mergeChunks(List<String> chunkFilenames, String outputFilename) throws IOException {
+    public void mergeChunks(List<PeerFileMetadata> chunkFileMetadatas, String outputFilename) throws IOException {
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFilename))) {
-            for (String chunkPath : chunkFilenames) {
-                Path path = Paths.get(destinationPath, chunkPath);
+            for (PeerFileMetadata chunkMetadata : chunkFileMetadatas) {
+                Path path = Paths.get(destinationPath, chunkMetadata.getFilename());
     
                 // Ensure the chunk file exists
                 if (!Files.exists(path)) {
-                    throw new FileNotFoundException("Chunk not found: " + chunkPath);
+                    throw new FileNotFoundException("Chunk not found: " + chunkMetadata.getFilename());
                 }
     
                 // Read the entire chunk file and write it to the output file
@@ -87,7 +90,14 @@ public class FileManager {
     public Set<PeerFileMetadata> listSharedFiles() throws IOException {
         try (Stream<Path> paths = Files.walk(Paths.get(sourcePath))) {
             return paths.filter(Files::isRegularFile)
-                        .map(path -> new PeerFileMetadata(path.getFileName().toString()))
+                        .map(path -> {
+                            try {
+                                return new PeerFileMetadata(path);
+                            } catch (IOException | NoSuchAlgorithmException e) {
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
         }
     }

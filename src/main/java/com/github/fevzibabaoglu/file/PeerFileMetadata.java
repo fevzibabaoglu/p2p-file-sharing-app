@@ -2,20 +2,34 @@ package com.github.fevzibabaoglu.file;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 public class PeerFileMetadata implements Serializable, Cloneable {
+
+    private static final int BUFFER_SIZE = 1024 * 1024;
     
+    private final Path filePath;
     private final String filename;
     private final byte[] hash;
 
-    // TODO implement hashing
-    public PeerFileMetadata(String filename) {
+    public PeerFileMetadata(Path filePath) throws IOException, NoSuchAlgorithmException {
+        this.filePath = filePath;
+        this.filename = filePath.getFileName().toString();
+        this.hash = computeFileHash();
+    }
+
+    private PeerFileMetadata(String filename, byte[] hash) {
+        this.filePath = null;
         this.filename = filename;
-        this.hash = null;
+        this.hash = hash;
     }
 
     public String getFilename() {
@@ -24,6 +38,23 @@ public class PeerFileMetadata implements Serializable, Cloneable {
 
     public byte[] getHash() {
         return hash;
+    }
+
+    private byte[] computeFileHash() throws IOException, NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+        try (FileInputStream fileInputStream = new FileInputStream(filePath.toString())) {
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int bytesRead;
+            
+            // Read the file in chunks and update the digest
+            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                digest.update(buffer, 0, bytesRead);
+            }
+        }
+        
+        // Get the hash value as a byte array
+        return digest.digest();
     }
 
     public byte[] serialize() throws IOException {
@@ -51,7 +82,8 @@ public class PeerFileMetadata implements Serializable, Cloneable {
     public PeerFileMetadata clone() {
         try {
             return new PeerFileMetadata(
-                this.filename
+                this.filename,
+                this.hash
             );
         } catch (Exception e) {
             throw new AssertionError("Cloning PeerNetworkInterface failed");
@@ -61,5 +93,22 @@ public class PeerFileMetadata implements Serializable, Cloneable {
     @Override
     public String toString() {
         return filename;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        PeerFileMetadata other = (PeerFileMetadata) obj;
+        return Arrays.equals(hash, other.hash);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(hash);
     }
 }

@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Set;
 
@@ -45,7 +46,7 @@ public class FileTransferManager {
                 new Thread(() -> {
                     try {
                         handleIncomingConnection(incomingSocket);
-                    } catch (ClassNotFoundException | IOException e) {
+                    } catch (ClassNotFoundException | IOException | NoSuchAlgorithmException e) {
                         e.printStackTrace();
                     } finally {
                         try {
@@ -58,7 +59,7 @@ public class FileTransferManager {
     }
 
     // Handles an incoming connection by receiving chunks and processing them
-    private void handleIncomingConnection(Socket incomingSocket) throws IOException, ClassNotFoundException {
+    private void handleIncomingConnection(Socket incomingSocket) throws IOException, ClassNotFoundException, NoSuchAlgorithmException {
         try (ObjectInputStream objectInputStream = new ObjectInputStream(incomingSocket.getInputStream())) {
             InetAddress receiveIPAddress = incomingSocket.getInetAddress();
             PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(localPeer, receiveIPAddress);
