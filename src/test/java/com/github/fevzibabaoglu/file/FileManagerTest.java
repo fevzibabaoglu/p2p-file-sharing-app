@@ -6,6 +6,7 @@ import com.github.fevzibabaoglu.network.file_transfer.FileChunkMessage;
 
 import java.io.*;
 import java.nio.file.*;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +22,7 @@ public class FileManagerTest {
     private PeerFileMetadata fileMetadata;
 
     @BeforeEach
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, NoSuchAlgorithmException {
         fileManager = new FileManager(INPUT_PATH, OUTPUT_PATH, CHUNK_SIZE);
 
         // Create a dummy file if ORIGINAL_FILE doesn't exist
@@ -29,18 +30,18 @@ public class FileManagerTest {
         if (!Files.exists(path)) {
             fileManager.createRandomFile(ORIGINAL_FILE, 1024 * 1024 + 15);
         }
-        fileMetadata = new PeerFileMetadata(ORIGINAL_FILE);
+        fileMetadata = new PeerFileMetadata(path);
     }
 
     @Test
-    public void testFileChunkingAndMerging() throws IOException {
+    public void testFileChunkingAndMerging() throws IOException, NoSuchAlgorithmException, InterruptedException {
         int chunkIndex = 0;
-        List<String> chunkPaths = new ArrayList<>();
+        List<Path> chunkPaths = new ArrayList<>();
 
         while (true) {
             try {
                 // Get the next chunk
-                byte[] chunkData = fileManager.getChunk(fileMetadata, chunkIndex);
+                byte[] chunkData = fileManager.loadChunk(fileMetadata, chunkIndex);
                 FileChunkMessage fileChunkMessage = new FileChunkMessage(null, null, fileMetadata, chunkIndex, chunkData);
                 String chunkFileName = fileChunkMessage.getFilename();
                 
@@ -48,7 +49,8 @@ public class FileManagerTest {
                 fileManager.saveChunk(fileChunkMessage);
 
                 // Track the chunk path
-                chunkPaths.add(chunkFileName);
+                Path path = Paths.get(OUTPUT_PATH, chunkFileName);
+                chunkPaths.add(path);
                 chunkIndex++;
             } catch (IllegalArgumentException e) {
                 // End of file reached
@@ -59,7 +61,13 @@ public class FileManagerTest {
         System.out.println("Chunks created: " + chunkPaths);
 
         // Merge the chunks back into a single file
-        fileManager.mergeChunks(chunkPaths, MERGED_FILE);
+        fileManager.mergeChunks(chunkPaths.stream().map(chunkPath -> {
+            try {
+                return new PeerFileMetadata(chunkPath);
+            } catch (NoSuchAlgorithmException | IOException e) {
+                return null;
+            }
+        }).filter(Objects::nonNull).toList(), MERGED_FILE);
 
         // Verify the merged file exists
         Path mergedFilePath = Paths.get(MERGED_FILE);
