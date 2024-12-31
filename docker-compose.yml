@@ -2,45 +2,54 @@
 services:
   peer_1:
     image: p2p_app
+    container_name: p2p_peer_1
     networks:
       network_1:
       network_2:
       network_4:
   peer_2:
     image: p2p_app
+    container_name: p2p_peer_2
     networks:
       network_2:
   peer_3:
     image: p2p_app
+    container_name: p2p_peer_3
     networks:
       network_3:
   peer_4:
     image: p2p_app
+    container_name: p2p_peer_4
     networks:
       network_3:
       network_4:
   peer_5:
     image: p2p_app
+    container_name: p2p_peer_5
     networks:
       network_4:
       network_5:
   peer_6:
     image: p2p_app
+    container_name: p2p_peer_6
     networks:
       network_5:
       network_6:
   peer_7:
     image: p2p_app
+    container_name: p2p_peer_7
     networks:
       network_6:
       network_7:
   peer_8:
     image: p2p_app
+    container_name: p2p_peer_8
     networks:
       network_7:
       network_8:
   peer_9:
     image: p2p_app
+    container_name: p2p_peer_9
     networks:
       network_8:
       network_9:
