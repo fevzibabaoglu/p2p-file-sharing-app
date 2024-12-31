@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.fevzibabaoglu.file.FileManager;
 import com.github.fevzibabaoglu.network.NetworkUtils;
@@ -19,18 +20,20 @@ public class BroadcastManager {
     private final FileManager fileManager;
     private final int ttl;
     private Peer localPeer;
-    private Peer tempLocalPeer;
+
+    private final AtomicReference<Peer> tempLocalPeerRef;
 
     public BroadcastManager(FileManager fileManager, int ttl) throws IOException {
         this.fileManager = fileManager;
         this.ttl = ttl;
+        tempLocalPeerRef = new AtomicReference<>();
         clearPeerCache();
     }
 
     public void clearPeerCache() throws IOException {
         localPeer = new Peer();
-        tempLocalPeer = new Peer();
-        tempLocalPeer.setFileMetadatas(fileManager.listSharedFiles());
+        tempLocalPeerRef.set(new Peer());
+        tempLocalPeerRef.get().setFileMetadatas(fileManager.listSharedFiles());
     }
 
     public Peer getLocalPeer() {
@@ -40,13 +43,13 @@ public class BroadcastManager {
     // Broadcast a discovery message on all network interfaces
     public void sendBroadcasts(DiscoveryMessage message) throws IOException {
         if (message == null) {
-            message = new DiscoveryMessage(ttl, tempLocalPeer);
+            message = new DiscoveryMessage(ttl, tempLocalPeerRef.get());
         }
 
         try (DatagramSocket socket = new DatagramSocket()) {
             socket.setBroadcast(true);
 
-            for (PeerNetworkInterface localPeerNetworkInterface : tempLocalPeer.getPeerNetworkInterfaces()) {
+            for (PeerNetworkInterface localPeerNetworkInterface : tempLocalPeerRef.get().getPeerNetworkInterfaces()) {
                 // Exclude the interface where the message came from
                 if (localPeerNetworkInterface.equals(message.getInInterfaceByIndex(-1))) {
                     continue;
@@ -84,7 +87,7 @@ public class BroadcastManager {
                 DiscoveryMessage receivedMessage = DiscoveryMessage.deserialize(packet.getData(), packet.getLength());
 
                 InetAddress receiveIPAddress = packet.getAddress();
-                PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(tempLocalPeer, receiveIPAddress);
+                PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(tempLocalPeerRef.get(), receiveIPAddress);
                 InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
 
                 // If receiver is the sender
@@ -97,7 +100,7 @@ public class BroadcastManager {
 
                 // Add the localPeer to previous peer's known peers (index -1 is localPeer, index -2 is previous peer)
                 Peer previousPeer = receivedMessage.getRoutePeerByIndex(-2);
-                previousPeer.addKnownPeerToInterface(receivedMessage.getOutInterfaceByIndex(-1), tempLocalPeer);
+                previousPeer.addKnownPeerToInterface(receivedMessage.getOutInterfaceByIndex(-1), tempLocalPeerRef.get());
 
                 System.out.printf("[%s] Broadcast of %s is captured\n", localIPAddress, receivedMessage.getOwner().getPeerNetworkInterfaces());
 
@@ -125,7 +128,7 @@ public class BroadcastManager {
                 DiscoveryMessage receivedMessage = DiscoveryMessage.deserialize(packet.getData(), packet.getLength());
 
                 InetAddress receivedIPAddress = packet.getAddress();
-                PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(tempLocalPeer, receivedIPAddress);
+                PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(tempLocalPeerRef.get(), receivedIPAddress);
                 InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
 
                 // If receivedMessage owner is the localPeer, update the localPeer with new info, else forward response
@@ -147,7 +150,7 @@ public class BroadcastManager {
         InetAddress sendIPAddress = sendPeerNetworkInterface.getLocalIPAddress();
 
         // Find local address
-        PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(tempLocalPeer, sendIPAddress);
+        PeerNetworkInterface localPeerNetworkInterface = NetworkUtils.subnetMatch(tempLocalPeerRef.get(), sendIPAddress);
         InetAddress localIPAddress = localPeerNetworkInterface.getLocalIPAddress();
 
         // Remove last hop
