@@ -3,14 +3,20 @@ package com.github.fevzibabaoglu.gui;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.swing.*;
+import javax.swing.table.AbstractTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
@@ -30,6 +36,7 @@ public class DownloadPanel extends JPanel {
     private final FileTransferManager fileTransferManager;
 
     private final JTree peerTree;
+    private DownloadTableModel downloadTableModel;
 
     public DownloadPanel(App app, FileManager fileManager, FileTransferManager fileTransferManager) {
         this.app = app;
@@ -39,6 +46,8 @@ public class DownloadPanel extends JPanel {
         peerTree = new JTree(new DefaultTreeModel(new DefaultMutableTreeNode("Peers")));
         configurePeerTree();
 
+        downloadTableModel = new DownloadTableModel();
+
         // Found files
         JPanel foundPanel = new JPanel(new BorderLayout());
         foundPanel.setBorder(BorderFactory.createTitledBorder("Found files"));
@@ -47,7 +56,7 @@ public class DownloadPanel extends JPanel {
         // Downloading files
         JPanel downloadingPanel = new JPanel(new BorderLayout());
         downloadingPanel.setBorder(BorderFactory.createTitledBorder("Downloading files"));
-        downloadingPanel.add(new JScrollPane(new JTable()), BorderLayout.CENTER);
+        downloadingPanel.add(new JScrollPane(new JTable(downloadTableModel)), BorderLayout.CENTER);
 
         JPanel panel = new JPanel(new GridLayout(1, 2, 10, 10));
         panel.add(foundPanel);
@@ -150,8 +159,8 @@ public class DownloadPanel extends JPanel {
 
         new Thread(() -> {
             try {
-                String outputFilename = requestedFileMetadata.getFilename();
-                fileManager.mergeChunks(chunkFilenames, outputFilename);
+                handleDownloadProgress(requestedFileMetadata, chunkFilenames);
+                fileManager.mergeChunks(chunkFilenames, requestedFileMetadata.getFilename());
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
@@ -177,8 +186,33 @@ public class DownloadPanel extends JPanel {
         ((DefaultTreeModel) peerTree.getModel()).reload(root);
     }
 
+    private void handleDownloadProgress(PeerFileMetadata requestedFileMetadata, List<String> chunkFilenames) throws IOException {
+        int numChunks = (int) Math.ceil((double) requestedFileMetadata.getFileSize() / App.CHUNK_SIZE);
+        Download download = new Download(requestedFileMetadata.getFilename(), numChunks);
+        downloadTableModel.addDownload(download);
+
+        ForkJoinPool forkJoinPool = new ForkJoinPool();
+        for (String chunkFilename : chunkFilenames) {
+            forkJoinPool.submit(() -> {
+                Path chunkPath = Paths.get(fileManager.getDestinationPath(), chunkFilename);
+                try {
+                    while (!Files.exists(chunkPath)) {
+                        Thread.sleep(500);
+                    }
+                } catch (InterruptedException e) {}
+                downloadTableModel.updateDownloadProgress(download);
+            });
+        }
+
+
+        try {
+            forkJoinPool.shutdown();
+            forkJoinPool.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {}
+    }
+
     // Custom renderer to enforce folder icons for root and peer nodes
-    static class CustomTreeCellRenderer extends DefaultTreeCellRenderer {
+    private static class CustomTreeCellRenderer extends DefaultTreeCellRenderer {
         @Override
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
             super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
@@ -200,6 +234,86 @@ public class DownloadPanel extends JPanel {
             }
 
             return this;
+        }
+    }
+
+    private static class Download {
+
+        private final String filename;
+        private final int numTotalChunks;
+        private int numCurrentChunks;
+    
+        public Download(String filename, int numTotalChunks) {
+            this.filename = filename;
+            this.numTotalChunks = numTotalChunks;
+            this.numCurrentChunks = 0;
+        }
+
+        public String getFilename() {
+            return filename;
+        }
+
+        public void incrementNumChunks() {
+            numCurrentChunks++;
+        }
+    
+        public int getProgress() {
+            return (int) ((double) numCurrentChunks / numTotalChunks * 100);
+        }
+    
+        public boolean isFinished() {
+            return getProgress() == 100;
+        }
+    }
+
+    private static class DownloadTableModel extends AbstractTableModel {
+
+        private final String[] columnNames = {"File Name", "Progress"};
+        private final List<Download> downloads = new ArrayList<>();
+
+        public void addDownload(Download download) {
+            downloads.add(download);
+            fireTableRowsInserted(downloads.size() - 1, downloads.size() - 1);
+        }
+
+        public synchronized void updateDownloadProgress(Download download) {
+            int rowIndex = downloads.indexOf(download);
+            download.incrementNumChunks();
+
+            if (download.isFinished()) {
+                downloads.remove(rowIndex);
+                fireTableRowsDeleted(rowIndex, rowIndex);
+            } else {
+                fireTableCellUpdated(rowIndex, 1);
+            }
+        }
+
+        @Override
+        public int getRowCount() {
+            return downloads.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columnNames.length;
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            Download download = downloads.get(rowIndex);
+            switch (columnIndex) {
+                case 0:
+                    return download.getFilename();
+                case 1:
+                    return String.format("%d%%", download.getProgress());
+                default:
+                    return null;
+            }
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return columnNames[column];
         }
     }
 }

@@ -24,6 +24,14 @@ public class FileManager {
         this.chunkSize = chunkSize;
     }
 
+    public String getSourcePath() {
+        return sourcePath;
+    }
+
+    public String getDestinationPath() {
+        return destinationPath;
+    }
+
     public void setPaths(String inputPath, String outputPath) {
         this.sourcePath = inputPath;
         this.destinationPath = outputPath;

@@ -156,6 +156,7 @@ public class App {
             app.fileManager.createRandomFile("test2", 123 * 1024, 5);
             app.fileManager.createRandomFile("test3", 756 * 1024, 5);
             app.fileManager.createRandomFile("test4", 11 * 1024 * 1024 + 153, 5);
+            app.fileManager.createRandomFile("test5", 123 * 1024 * 1024 + 282, 5);
 
             Thread.sleep(5000);
             app.initializeThreads();   
