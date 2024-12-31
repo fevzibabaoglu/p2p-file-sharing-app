@@ -24,13 +24,21 @@ public class FileManager {
         this.chunkSize = chunkSize;
     }
 
+    public String getSourcePath() {
+        return sourcePath;
+    }
+
+    public String getDestinationPath() {
+        return destinationPath;
+    }
+
     public void setPaths(String inputPath, String outputPath) {
         this.sourcePath = inputPath;
         this.destinationPath = outputPath;
     }
 
     // Reads a specific chunk from the file to send
-    public byte[] getChunk(PeerFileMetadata fileMetadata, int chunkIndex) throws IOException {
+    public byte[] loadChunk(PeerFileMetadata fileMetadata, int chunkIndex) throws IOException {
         Path path = Paths.get(sourcePath, fileMetadata.getFilename());
 
         // Calculate the start position of the requested chunk
@@ -69,19 +77,18 @@ public class FileManager {
     }
 
     // Merge received chunks into a complete file
-    public void mergeChunks(List<PeerFileMetadata> chunkFileMetadatas, String outputFilename) throws IOException {
-        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFilename))) {
-            for (PeerFileMetadata chunkMetadata : chunkFileMetadatas) {
-                Path path = Paths.get(destinationPath, chunkMetadata.getFilename());
-    
-                // Ensure the chunk file exists
-                if (!Files.exists(path)) {
-                    throw new FileNotFoundException("Chunk not found: " + chunkMetadata.getFilename());
-                }
+    public void mergeChunks(List<String> chunkFilenames, String outputFilename) throws IOException, InterruptedException {
+        Path outputPath = Paths.get(destinationPath, outputFilename);
+        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputPath.toString()))) {
+            for (String chunkFilename : chunkFilenames) {
+                Path path = Paths.get(destinationPath, chunkFilename);
     
                 // Read the entire chunk file and write it to the output file
                 byte[] chunkData = Files.readAllBytes(path);
                 out.write(chunkData);
+
+                // Delete the chunk file after writing
+                Files.delete(path);
             }
         }
     }
@@ -102,11 +109,11 @@ public class FileManager {
         }
     }
 
-    public void createRandomFile(String filename, int size) throws IOException {
+    public void createRandomFile(String filename, int size, long seed) throws IOException {
         Path filePath = Paths.get(sourcePath, filename);
         try (FileOutputStream fileOutputStream = new FileOutputStream(filePath.toString())) {
             byte[] buffer = new byte[1024];
-            Random random = new Random();
+            Random random = (seed == -1) ? new Random() : new Random(seed);
 
             for (int i = 0; i < size / buffer.length; i++) {
                 random.nextBytes(buffer);

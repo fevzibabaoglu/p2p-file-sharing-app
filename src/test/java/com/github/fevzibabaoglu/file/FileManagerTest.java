@@ -28,20 +28,20 @@ public class FileManagerTest {
         // Create a dummy file if ORIGINAL_FILE doesn't exist
         Path path = Paths.get(ORIGINAL_FILE);
         if (!Files.exists(path)) {
-            fileManager.createRandomFile(ORIGINAL_FILE, 1024 * 1024 + 15);
+            fileManager.createRandomFile(ORIGINAL_FILE, 1024 * 1024 + 15, -1);
         }
         fileMetadata = new PeerFileMetadata(path);
     }
 
     @Test
-    public void testFileChunkingAndMerging() throws IOException, NoSuchAlgorithmException {
+    public void testFileChunkingAndMerging() throws IOException, NoSuchAlgorithmException, InterruptedException {
         int chunkIndex = 0;
         List<Path> chunkPaths = new ArrayList<>();
 
         while (true) {
             try {
                 // Get the next chunk
-                byte[] chunkData = fileManager.getChunk(fileMetadata, chunkIndex);
+                byte[] chunkData = fileManager.loadChunk(fileMetadata, chunkIndex);
                 FileChunkMessage fileChunkMessage = new FileChunkMessage(null, null, fileMetadata, chunkIndex, chunkData);
                 String chunkFileName = fileChunkMessage.getFilename();
                 
@@ -61,13 +61,7 @@ public class FileManagerTest {
         System.out.println("Chunks created: " + chunkPaths);
 
         // Merge the chunks back into a single file
-        fileManager.mergeChunks(chunkPaths.stream().map(chunkPath -> {
-            try {
-                return new PeerFileMetadata(chunkPath);
-            } catch (NoSuchAlgorithmException | IOException e) {
-                return null;
-            }
-        }).filter(Objects::nonNull).toList(), MERGED_FILE);
+        fileManager.mergeChunks(chunkPaths.stream().map(chunkPath -> chunkPath.getFileName().toString()).filter(Objects::nonNull).toList(), MERGED_FILE);
 
         // Verify the merged file exists
         Path mergedFilePath = Paths.get(MERGED_FILE);

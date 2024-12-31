@@ -6,26 +6,23 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Set;
 
 import com.github.fevzibabaoglu.file.PeerFileMetadata;
 import com.github.fevzibabaoglu.network.Peer;
 
-public class FileChunkMessage implements Message, Serializable {
-    
-    private static final long serialVersionUID = 1L;
+public class PeerFileMetadataRequestMessage implements Message, Serializable {
 
     private final Peer sender;
     private final Peer receiver;
     private final PeerFileMetadata fileMetadata;
-    private final int chunkIndex;
-    private final byte[] chunkData;
+    private final Set<Integer> chunkIndices;
 
-    public FileChunkMessage(Peer sender, Peer receiver, PeerFileMetadata fileMetadata, int chunkIndex, byte[] chunkData) {
+    public PeerFileMetadataRequestMessage(Peer sender, Peer receiver, PeerFileMetadata fileMetadata, Set<Integer> chunkIndices) {
         this.sender = sender;
         this.receiver = receiver;
         this.fileMetadata = fileMetadata;
-        this.chunkIndex = chunkIndex;
-        this.chunkData = chunkData;
+        this.chunkIndices = chunkIndices;
     }
 
     public Peer getSender() {
@@ -40,16 +37,8 @@ public class FileChunkMessage implements Message, Serializable {
         return fileMetadata;
     }
 
-    public int getChunkIndex() {
-        return chunkIndex;
-    }
-
-    public String getFilename() {
-        return String.format("%s.%s", fileMetadata.getFilename(), chunkIndex);
-    }
-
-    public byte[] getChunkData() {
-        return chunkData;
+    public Set<Integer> getChunkIndices() {
+        return chunkIndices;
     }
 
     public byte[] serialize() throws IOException {
@@ -60,7 +49,7 @@ public class FileChunkMessage implements Message, Serializable {
         }
     }
 
-    public static FileChunkMessage deserialize(byte[] data, int length) throws IOException, ClassNotFoundException {
+    public static PeerFileMetadataRequestMessage deserialize(byte[] data, int length) throws IOException, ClassNotFoundException {
         if (length < 0 || length > data.length) {
             throw new IllegalArgumentException("Invalid length: " + length);
         }
@@ -69,7 +58,7 @@ public class FileChunkMessage implements Message, Serializable {
         
         try (ByteArrayInputStream bis = new ByteArrayInputStream(truncatedData);
              ObjectInputStream ois = new ObjectInputStream(bis)) {
-            return (FileChunkMessage) ois.readObject();
+            return (PeerFileMetadataRequestMessage) ois.readObject();
         }
     }
 }

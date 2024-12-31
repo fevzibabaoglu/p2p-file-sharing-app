@@ -16,19 +16,22 @@ public class PeerFileMetadata implements Serializable, Cloneable {
 
     private static final int BUFFER_SIZE = 1024 * 1024;
     
-    private final Path filePath;
+    private final transient Path filePath;
     private final String filename;
+    private final long fileSize;
     private final byte[] hash;
 
     public PeerFileMetadata(Path filePath) throws IOException, NoSuchAlgorithmException {
         this.filePath = filePath;
         this.filename = filePath.getFileName().toString();
+        this.fileSize = filePath.toFile().length();
         this.hash = computeFileHash();
     }
 
-    private PeerFileMetadata(String filename, byte[] hash) {
+    private PeerFileMetadata(String filename, long fileSize, byte[] hash) {
         this.filePath = null;
         this.filename = filename;
+        this.fileSize = fileSize;
         this.hash = hash;
     }
 
@@ -38,6 +41,10 @@ public class PeerFileMetadata implements Serializable, Cloneable {
 
     public byte[] getHash() {
         return hash;
+    }
+
+    public long getFileSize() throws IOException {
+        return fileSize;
     }
 
     private byte[] computeFileHash() throws IOException, NoSuchAlgorithmException {
@@ -83,6 +90,7 @@ public class PeerFileMetadata implements Serializable, Cloneable {
         try {
             return new PeerFileMetadata(
                 this.filename,
+                this.fileSize,
                 this.hash
             );
         } catch (Exception e) {
