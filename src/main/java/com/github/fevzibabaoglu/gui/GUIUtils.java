@@ -14,13 +14,17 @@ public class GUIUtils {
         return JOptionPane.showInputDialog(parent, message);
     }
 
-    public static String getFolderFromDialog(Component parent) {
+    public static String getFolderFromDialog(Component parent, String defaultPath) {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
         // Set the default directory to the workspace folder
-        String workspacePath = System.getProperty("user.dir");
-        chooser.setCurrentDirectory(new File(workspacePath));
+        if (defaultPath != null) {
+            chooser.setCurrentDirectory(new File(defaultPath));
+        } else {
+            String workspacePath = System.getProperty("user.dir");
+            chooser.setCurrentDirectory(new File(workspacePath));
+        }
 
         int result = chooser.showOpenDialog(parent);
         if (result == JFileChooser.APPROVE_OPTION) {

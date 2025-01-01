@@ -73,6 +73,10 @@ public class App {
         return fileTransferManager;
     }
 
+    public MainFrame getMainFrame() {
+        return mainFrameRef.get();
+    }
+
     public void initializeThreads() {
         threadPool.submit(() -> {
             try {

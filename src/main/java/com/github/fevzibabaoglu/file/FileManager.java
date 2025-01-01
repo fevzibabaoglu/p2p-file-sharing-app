@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,11 +18,13 @@ public class FileManager {
     private String sourcePath;
     private String destinationPath;
     private final int chunkSize;
+    private final List<Path> excludedPaths;
 
     public FileManager(String sourcePath, String destinationPath, int chunkSize) {
         this.sourcePath = sourcePath;
         this.destinationPath = destinationPath;
         this.chunkSize = chunkSize;
+        this.excludedPaths = new CopyOnWriteArrayList<>();
     }
 
     public String getSourcePath() {
@@ -35,6 +38,14 @@ public class FileManager {
     public void setPaths(String inputPath, String outputPath) {
         this.sourcePath = inputPath;
         this.destinationPath = outputPath;
+    }
+
+    public void addExcludedPath(Path path) {
+        excludedPaths.add(path);
+    }
+
+    public void removeExcludedPath(Path path) {
+        excludedPaths.remove(path);
     }
 
     // Reads a specific chunk from the file to send
@@ -97,15 +108,17 @@ public class FileManager {
     public Set<PeerFileMetadata> listSharedFiles() throws IOException {
         try (Stream<Path> paths = Files.walk(Paths.get(sourcePath))) {
             return paths.filter(Files::isRegularFile)
-                        .map(path -> {
-                            try {
-                                return new PeerFileMetadata(path);
-                            } catch (IOException | NoSuchAlgorithmException e) {
-                                return null;
-                            }
-                        })
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet());
+                .filter(path -> excludedPaths.stream()
+                    .noneMatch(excludedPath -> path.startsWith(excludedPath)))
+                .map(path -> {
+                    try {
+                        return new PeerFileMetadata(path);
+                    } catch (IOException | NoSuchAlgorithmException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
         }
     }
 

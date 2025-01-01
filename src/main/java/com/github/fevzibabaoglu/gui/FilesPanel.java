@@ -1,24 +1,30 @@
 package com.github.fevzibabaoglu.gui;
 
 import java.awt.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.*;
 
 import com.github.fevzibabaoglu.App;
+import com.github.fevzibabaoglu.file.FileManager;
 
 public class FilesPanel extends JPanel {
 
     private final App app;
+    private final FileManager fileManager;
     
     private JTextField sourceFolderField;
     private JTextField destinationFolderField;
     private DefaultListModel<String> exclusionListModel;
     private JTextArea maskText;
 
-    public FilesPanel(App app) {
+    public FilesPanel(App app, FileManager fileManager) {
         this.app = app;
+        this.fileManager = fileManager;
+
         sourceFolderField = new JTextField(app.getSourcePath());
         destinationFolderField = new JTextField(app.getDestinationPath());
         exclusionListModel = new DefaultListModel<>();
@@ -70,13 +76,20 @@ public class FilesPanel extends JPanel {
 
         JButton addButton = new JButton("Add");
         addButton.addActionListener(e -> {
-            exclusionListModel.addElement(GUIUtils.getFolderFromDialog(this));
+            String selectedPath = GUIUtils.getFolderFromDialog(this, app.getSourcePath());
+            if (selectedPath != null) {
+                exclusionListModel.addElement(selectedPath);
+                Path excludedPath = Paths.get(selectedPath);
+                fileManager.addExcludedPath(excludedPath);
+            }
         });
 
         JButton delButton = new JButton("Del");
         delButton.addActionListener(e -> {
             int selectedIndex = exclusionList.getSelectedIndex();
             if (selectedIndex != -1) {
+                Path excludedPath = Paths.get(exclusionListModel.get(selectedIndex));
+                fileManager.removeExcludedPath(excludedPath);
                 exclusionListModel.remove(selectedIndex);
             }
         });
@@ -102,12 +115,12 @@ public class FilesPanel extends JPanel {
     }
 
     private void handleSourceBrowse() {
-        sourceFolderField.setText(GUIUtils.getFolderFromDialog(this));
+        sourceFolderField.setText(GUIUtils.getFolderFromDialog(this, null));
         app.setSourcePath(sourceFolderField.getText());
     }
 
     private void handleDestinationBrowse() {
-        destinationFolderField.setText(GUIUtils.getFolderFromDialog(this));
+        destinationFolderField.setText(GUIUtils.getFolderFromDialog(this, null));
         app.setDestinationPath(destinationFolderField.getText());
     }
 

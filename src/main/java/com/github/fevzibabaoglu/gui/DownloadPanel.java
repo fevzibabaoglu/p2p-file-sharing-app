@@ -171,19 +171,29 @@ public class DownloadPanel extends JPanel {
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) peerTree.getModel().getRoot();
         root.removeAllChildren();
 
+        List<String> downloadingMasks = app.getMainFrame().getFilesPanel().getDownloadingMaskList();
+
         Peer localPeer = app.getLocalPeer();
         if (localPeer != null) {
             for (Peer peer : localPeer.getReachablePeers()) {
                 DefaultMutableTreeNode peerTree = new DefaultMutableTreeNode(peer);
-                for (PeerFileMetadata file : peer.getFileMetadatas()) {
-                    peerTree.add(new DefaultMutableTreeNode(file));
-                }
+
+                peer.getFileMetadatas().stream()
+                    .filter(file -> downloadingMasks.stream().noneMatch(mask -> file.getFilename().matches(convertMaskToRegex(mask))))
+                    .forEach(file -> peerTree.add(new DefaultMutableTreeNode(file)));
+
                 root.add(peerTree);
             }
         }
 
         // Notify the tree model about changes
         ((DefaultTreeModel) peerTree.getModel()).reload(root);
+    }
+    
+    private String convertMaskToRegex(String mask) {
+        return mask.replace(".", "\\.")
+            .replace("*", ".*")
+            .replace("?", ".");
     }
 
     private void handleDownloadProgress(PeerFileMetadata requestedFileMetadata, List<String> chunkFilenames) throws IOException {
