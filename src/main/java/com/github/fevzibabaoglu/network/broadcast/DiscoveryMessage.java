@@ -128,10 +128,6 @@ public class DiscoveryMessage implements Serializable, Cloneable {
         }
     }
 
-    public boolean isInterfaceListEmpty() {
-        return interfaceList.isEmpty();
-    }
-
     public byte[] serialize() throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {

@@ -13,7 +13,6 @@ import com.github.fevzibabaoglu.file.FileManager;
 
 public class FilesPanel extends JPanel {
 
-    private final App app;
     private final FileManager fileManager;
     
     private JTextField sourceFolderField;
@@ -22,11 +21,10 @@ public class FilesPanel extends JPanel {
     private JTextArea maskText;
 
     public FilesPanel(App app, FileManager fileManager) {
-        this.app = app;
         this.fileManager = fileManager;
 
-        sourceFolderField = new JTextField(app.getSourcePath());
-        destinationFolderField = new JTextField(app.getDestinationPath());
+        sourceFolderField = new JTextField(fileManager.getSourcePath());
+        destinationFolderField = new JTextField(fileManager.getDestinationPath());
         exclusionListModel = new DefaultListModel<>();
         maskText = new JTextArea();
 
@@ -76,7 +74,7 @@ public class FilesPanel extends JPanel {
 
         JButton addButton = new JButton("Add");
         addButton.addActionListener(e -> {
-            String selectedPath = GUIUtils.getFolderFromDialog(this, app.getSourcePath());
+            String selectedPath = GUIUtils.getFolderFromDialog(this, fileManager.getSourcePath());
             if (selectedPath != null) {
                 exclusionListModel.addElement(selectedPath);
                 Path excludedPath = Paths.get(selectedPath);
@@ -116,12 +114,12 @@ public class FilesPanel extends JPanel {
 
     private void handleSourceBrowse() {
         sourceFolderField.setText(GUIUtils.getFolderFromDialog(this, null));
-        app.setSourcePath(sourceFolderField.getText());
+        fileManager.setSourcePath(sourceFolderField.getText());
     }
 
     private void handleDestinationBrowse() {
         destinationFolderField.setText(GUIUtils.getFolderFromDialog(this, null));
-        app.setDestinationPath(destinationFolderField.getText());
+        fileManager.setDestinationPath(destinationFolderField.getText());
     }
 
     public List<String> getDownloadingMaskList() {

@@ -24,28 +24,23 @@ public class PeerNetworkInterface implements Serializable, Cloneable {
     public PeerNetworkInterface(NetworkInterface networkInterface) throws SocketException {
         this.networkInterface = networkInterface;
 
-        if (this.networkInterface.isLoopback() || !this.networkInterface.isUp()) {
-            this.maskLength = 0;
-            this.localIPAddress = null;
-            this.broadcastIPAddress = null;
-            return;
-        }
+        if (!this.networkInterface.isLoopback() && this.networkInterface.isUp()) {
+            for (InterfaceAddress interfaceAddress : this.networkInterface.getInterfaceAddresses()) {
+                InetAddress localIPAddress = interfaceAddress.getAddress();
+                if (!(localIPAddress instanceof Inet4Address)) {
+                    continue;
+                }
 
-        for (InterfaceAddress interfaceAddress : this.networkInterface.getInterfaceAddresses()) {
-            InetAddress localIPAddress = interfaceAddress.getAddress();
-            if (!(localIPAddress instanceof Inet4Address)) {
-                continue;
+                InetAddress broadcastIPAddress = interfaceAddress.getBroadcast();
+                if (broadcastIPAddress == null || broadcastIPAddress.getHostAddress().equals("0.0.0.0")) {
+                    continue;
+                }
+
+                this.maskLength = interfaceAddress.getNetworkPrefixLength();
+                this.localIPAddress = localIPAddress;
+                this.broadcastIPAddress = broadcastIPAddress;
+                return;
             }
-
-            InetAddress broadcastIPAddress = interfaceAddress.getBroadcast();
-            if (broadcastIPAddress == null || broadcastIPAddress.getHostAddress().equals("0.0.0.0")) {
-                continue;
-            }
-
-            this.maskLength = interfaceAddress.getNetworkPrefixLength();
-            this.localIPAddress = localIPAddress;
-            this.broadcastIPAddress = broadcastIPAddress;
-            return;
         }
 
         this.maskLength = 0;
@@ -63,10 +58,6 @@ public class PeerNetworkInterface implements Serializable, Cloneable {
     public boolean isUpIPv4Interface() {
         return ((broadcastIPAddress != null) && (localIPAddress != null));
     } 
-
-    public NetworkInterface getNetworkInterface() {
-        return networkInterface;
-    }
 
     public short getMaskLength() {
         return maskLength;

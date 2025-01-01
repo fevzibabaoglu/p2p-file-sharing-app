@@ -34,10 +34,6 @@ public class FileTransferManager {
         this.localPeer = localPeer;
     }
 
-    public Peer getLocalPeer() {
-        return localPeer;
-    }
-
     // Starts the listener to accept incoming connections
     public void listen() throws IOException {
         try (ServerSocket serverSocket = new ServerSocket(LISTENING_PORT)) {
@@ -119,7 +115,7 @@ public class FileTransferManager {
     }
 
     // Sends a file to a target peer
-    public void sendChunks(Peer receiver, PeerFileMetadata fileMetadata, Set<Integer> chunkIndices) throws IOException {
+    private void sendChunks(Peer receiver, PeerFileMetadata fileMetadata, Set<Integer> chunkIndices) throws IOException {
         List<PeerNetworkInterface> route = localPeer.getRouteToPeer(receiver);
         if (route == null) {
             return;

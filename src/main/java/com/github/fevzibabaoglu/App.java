@@ -43,34 +43,16 @@ public class App {
         mainFrameRef = new AtomicReference<>();
     }
 
-    public String getSourcePath() {
-        return sourcePath;
-    }
-
-    public void setSourcePath(String sourcePath) {
-        this.sourcePath = sourcePath;
-        fileManager.setPaths(sourcePath, destinationPath);
-    }
-
-    public String getDestinationPath() {
-        return destinationPath;
-    }
-
-    public void setDestinationPath(String destinationPath) {
-        this.destinationPath = destinationPath;
-        fileManager.setPaths(sourcePath, destinationPath);
-    }
-
-    public Peer getLocalPeer() {
-        return localPeerRef.get();
-    }
-
     public FileManager getFileManager() {
         return fileManager;
     }
 
     public FileTransferManager getFileTransferManager() {
         return fileTransferManager;
+    }
+
+    public Peer getLocalPeer() {
+        return localPeerRef.get();
     }
 
     public MainFrame getMainFrame() {

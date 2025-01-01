@@ -36,7 +36,7 @@ public class DownloadPanel extends JPanel {
     private final FileTransferManager fileTransferManager;
 
     private final JTree peerTree;
-    private DownloadTableModel downloadTableModel;
+    private final DownloadTableModel downloadTableModel;
 
     public DownloadPanel(App app, FileManager fileManager, FileTransferManager fileTransferManager) {
         this.app = app;
@@ -167,6 +167,31 @@ public class DownloadPanel extends JPanel {
         }).start();
     }
 
+    private void handleDownloadProgress(PeerFileMetadata requestedFileMetadata, List<String> chunkFilenames) throws IOException {
+        int numChunks = (int) Math.ceil((double) requestedFileMetadata.getFileSize() / App.CHUNK_SIZE);
+        Download download = new Download(requestedFileMetadata.getFilename(), numChunks);
+        downloadTableModel.addDownload(download);
+
+        ForkJoinPool forkJoinPool = new ForkJoinPool();
+        for (String chunkFilename : chunkFilenames) {
+            forkJoinPool.submit(() -> {
+                Path chunkPath = Paths.get(fileManager.getDestinationPath(), chunkFilename);
+                try {
+                    while (!Files.exists(chunkPath)) {
+                        Thread.sleep(500);
+                    }
+                } catch (InterruptedException e) {}
+                downloadTableModel.updateDownloadProgress(download);
+            });
+        }
+
+
+        try {
+            forkJoinPool.shutdown();
+            forkJoinPool.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {}
+    }
+
     public void updatePeerFileTree() {
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) peerTree.getModel().getRoot();
         root.removeAllChildren();
@@ -194,31 +219,6 @@ public class DownloadPanel extends JPanel {
         return mask.replace(".", "\\.")
             .replace("*", ".*")
             .replace("?", ".");
-    }
-
-    private void handleDownloadProgress(PeerFileMetadata requestedFileMetadata, List<String> chunkFilenames) throws IOException {
-        int numChunks = (int) Math.ceil((double) requestedFileMetadata.getFileSize() / App.CHUNK_SIZE);
-        Download download = new Download(requestedFileMetadata.getFilename(), numChunks);
-        downloadTableModel.addDownload(download);
-
-        ForkJoinPool forkJoinPool = new ForkJoinPool();
-        for (String chunkFilename : chunkFilenames) {
-            forkJoinPool.submit(() -> {
-                Path chunkPath = Paths.get(fileManager.getDestinationPath(), chunkFilename);
-                try {
-                    while (!Files.exists(chunkPath)) {
-                        Thread.sleep(500);
-                    }
-                } catch (InterruptedException e) {}
-                downloadTableModel.updateDownloadProgress(download);
-            });
-        }
-
-
-        try {
-            forkJoinPool.shutdown();
-            forkJoinPool.awaitTermination(60, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {}
     }
 
     // Custom renderer to enforce folder icons for root and peer nodes

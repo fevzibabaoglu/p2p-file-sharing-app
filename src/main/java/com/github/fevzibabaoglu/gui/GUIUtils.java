@@ -10,10 +10,6 @@ public class GUIUtils {
         JOptionPane.showMessageDialog(parent, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
 
-    public static String getInputFromDialog(Component parent, String message) {
-        return JOptionPane.showInputDialog(parent, message);
-    }
-
     public static String getFolderFromDialog(Component parent, String defaultPath) {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);

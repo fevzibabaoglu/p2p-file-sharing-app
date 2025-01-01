@@ -31,13 +31,16 @@ public class FileManager {
         return sourcePath;
     }
 
+    public void setSourcePath(String sourcePath) {
+        this.sourcePath = sourcePath;
+    }
+
     public String getDestinationPath() {
         return destinationPath;
     }
 
-    public void setPaths(String inputPath, String outputPath) {
-        this.sourcePath = inputPath;
-        this.destinationPath = outputPath;
+    public void setDestinationPath(String destinationPath) {
+        this.destinationPath = destinationPath;
     }
 
     public void addExcludedPath(Path path) {

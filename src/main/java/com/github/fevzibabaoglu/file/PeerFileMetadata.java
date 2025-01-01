@@ -39,10 +39,6 @@ public class PeerFileMetadata implements Serializable, Cloneable {
         return filename;
     }
 
-    public byte[] getHash() {
-        return hash;
-    }
-
     public long getFileSize() throws IOException {
         return fileSize;
     }
