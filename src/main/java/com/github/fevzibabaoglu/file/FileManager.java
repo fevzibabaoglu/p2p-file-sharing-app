@@ -54,25 +54,22 @@ public class FileManager {
     // Reads a specific chunk from the file to send
     public byte[] loadChunk(PeerFileMetadata fileMetadata, int chunkIndex) throws IOException {
         Path path = Paths.get(sourcePath, fileMetadata.getFilename());
-
-        // Calculate the start position of the requested chunk
-        long startPosition = (long) chunkIndex * chunkSize;
-
-        // Ensure the file exists and the chunk is within bounds
         if (!Files.exists(path)) {
             throw new FileNotFoundException("File not found: " + fileMetadata.getFilename());
         }
+
+        long startPosition = (long) chunkIndex * chunkSize;
 
         long fileSize = Files.size(path);
         if (startPosition >= fileSize) {
             throw new IllegalArgumentException("Requested chunk is out of bounds.");
         }
 
-        // Determine the size of the chunk to read (last chunk may be smaller)
+        // Determine the size of the chunk
         int bytesToRead = (int) Math.min(chunkSize, fileSize - startPosition);
         byte[] chunkData = new byte[bytesToRead];
 
-        // Read the chunk dynamically
+        // Read the chunk
         try (RandomAccessFile raf = new RandomAccessFile(path.toString(), "r")) {
             raf.seek(startPosition);
             raf.readFully(chunkData);
@@ -97,7 +94,6 @@ public class FileManager {
             for (String chunkFilename : chunkFilenames) {
                 Path path = Paths.get(destinationPath, chunkFilename);
     
-                // Read the entire chunk file and write it to the output file
                 byte[] chunkData = Files.readAllBytes(path);
                 out.write(chunkData);
 

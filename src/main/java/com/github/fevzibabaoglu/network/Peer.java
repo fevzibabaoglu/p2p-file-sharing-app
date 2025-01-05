@@ -104,16 +104,18 @@ public class Peer implements Serializable, Cloneable {
                     if (findRouteRecursive(knownPeer, targetPeer, route, visitedPeers)) {
                         return true;
                     }
-                    route.remove(route.size() - 1); // Backtrack
+
+                    // Backtrack
+                    route.remove(route.size() - 1);
                 }
             }
         }
         return false;
     }
 
+    // DFS traversal
     // Assuming no circular references
     public List<Peer> getReachablePeers() {
-        // Use a Set to avoid duplicates and a Stack for DFS traversal
         Set<Peer> visited = new HashSet<>();
         Stack<Peer> stack = new Stack<>();
         List<Peer> reachablePeers = new ArrayList<>();

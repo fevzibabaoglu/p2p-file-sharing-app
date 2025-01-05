@@ -56,7 +56,6 @@ public class PeerFileMetadata implements Serializable, Cloneable {
             }
         }
         
-        // Get the hash value as a byte array
         return digest.digest();
     }
 
@@ -90,7 +89,7 @@ public class PeerFileMetadata implements Serializable, Cloneable {
                 this.hash
             );
         } catch (Exception e) {
-            throw new AssertionError("Cloning PeerNetworkInterface failed");
+            throw new AssertionError("Cloning PeerFileMetadata failed");
         }
     }
 

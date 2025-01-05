@@ -27,18 +27,15 @@ public class FilesPanel extends JPanel {
         exclusionListModel = new DefaultListModel<>();
         maskText = new JTextArea();
 
-        // Main settings
         JPanel settingsPanel = new JPanel(new GridLayout(2, 1, 5, 5));
         settingsPanel.add(createSourceBrowseSection());
         settingsPanel.add(createDestinatioJPanel());
         
-        // Exclusion settings
         JPanel exclusionPanel = new JPanel(new GridLayout(1, 2, 5, 5));
         exclusionPanel.setBorder(BorderFactory.createTitledBorder("Settings"));
         exclusionPanel.add(createSourceExclusionSection());
         exclusionPanel.add(createDownloadExclusionSection());
         
-        // FilesPanel layout
         setLayout(new BorderLayout(5, 5));
         add(settingsPanel, BorderLayout.NORTH);
         add(exclusionPanel, BorderLayout.CENTER);

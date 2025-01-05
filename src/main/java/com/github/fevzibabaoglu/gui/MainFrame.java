@@ -34,15 +34,12 @@ public class MainFrame extends JFrame {
             }
         });
 
-        // Create menu bar
         JMenuBar menuBar = createMenuBar();
         setJMenuBar(menuBar);
 
-        // Add panels
         filesPanel = new FilesPanel(fileManager);
         downloadPanel = new DownloadPanel(app, fileManager, fileTransferManager);
 
-        // Set layout
         JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.add(filesPanel, BorderLayout.NORTH);
         contentPanel.add(downloadPanel, BorderLayout.CENTER);

@@ -20,7 +20,6 @@ public class NetworkUtils {
     // Find the PeerNetworkInterface of the subnet that the localIP is in
     public static PeerNetworkInterface ipMatch(Peer peer, InetAddress localIPAddress) {
         for (PeerNetworkInterface localPeerNetworkInterface : peer.getPeerNetworkInterfaces()) {
-            // Check if the local IP is in
             if (localPeerNetworkInterface.getLocalIPAddress().getHostAddress().equals(localIPAddress.getHostAddress())) {
                 return localPeerNetworkInterface;
             }
@@ -31,7 +30,6 @@ public class NetworkUtils {
     // Find the PeerNetworkInterface of the subnet that the targetIp is in
     public static PeerNetworkInterface subnetMatch(Peer peer, InetAddress targetIPAddress) throws UnknownHostException, SocketException {
         for (PeerNetworkInterface localPeerNetworkInterface : peer.getPeerNetworkInterfaces()) {
-            // Check if the target IP is within the same subnet
             if (isInSameSubnet(localPeerNetworkInterface, targetIPAddress)) {
                 return localPeerNetworkInterface;
             }

@@ -48,12 +48,10 @@ public class DownloadPanel extends JPanel {
 
         downloadTableModel = new DownloadTableModel();
 
-        // Found files
         JPanel foundPanel = new JPanel(new BorderLayout());
         foundPanel.setBorder(BorderFactory.createTitledBorder("Found files"));
         foundPanel.add(new JScrollPane(peerTree), BorderLayout.CENTER);
 
-        // Downloading files
         JPanel downloadingPanel = new JPanel(new BorderLayout());
         downloadingPanel.setBorder(BorderFactory.createTitledBorder("Downloading files"));
         downloadingPanel.add(new JScrollPane(new JTable(downloadTableModel)), BorderLayout.CENTER);
@@ -211,7 +209,6 @@ public class DownloadPanel extends JPanel {
             }
         }
 
-        // Notify the tree model about changes
         ((DefaultTreeModel) peerTree.getModel()).reload(root);
     }
     
