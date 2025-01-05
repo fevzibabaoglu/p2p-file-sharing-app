@@ -3,6 +3,7 @@ package com.github.fevzibabaoglu.gui;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 
 import javax.swing.*;
 
@@ -88,7 +89,11 @@ public class MainFrame extends JFrame {
     }
 
     private void handleDisconnect() {
-        app.shutdownThreads();
+        try {
+            app.shutdownThreads();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void handleExit() {

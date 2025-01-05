@@ -19,28 +19,32 @@ public class App {
     private static final int TTL = 3;
     private static final int BROADCAST_INTERVAL = 20000;
 
-    private final ExecutorService threadPool;
+    private ExecutorService threadPool;
     private final FileManager fileManager;
     private final BroadcastManager broadcastManager;
     private final FileTransferManager fileTransferManager;
 
     private final AtomicReference<Peer> localPeerRef;
     private final AtomicReference<MainFrame> mainFrameRef;
-    
+
+    private volatile boolean threadsRunning;
+
     private String sourcePath;
     private String destinationPath;
-    
+
     public App(String defaultSourcePath, String defaultDestinationPath) throws IOException {
         sourcePath = defaultSourcePath;
         destinationPath = defaultDestinationPath;
 
         threadPool = Executors.newFixedThreadPool(4);
         fileManager = new FileManager(this.sourcePath, this.destinationPath, CHUNK_SIZE);
-        broadcastManager = new BroadcastManager(fileManager, TTL);
-        fileTransferManager = new FileTransferManager(fileManager);
+        broadcastManager = new BroadcastManager(this, fileManager, TTL);
+        fileTransferManager = new FileTransferManager(this, fileManager);
 
         localPeerRef = new AtomicReference<>();
         mainFrameRef = new AtomicReference<>();
+
+        threadsRunning = false;
     }
 
     public FileManager getFileManager() {
@@ -59,10 +63,21 @@ public class App {
         return mainFrameRef.get();
     }
 
-    public void initializeThreads() {
+    public synchronized void initializeThreads() {
+        if (threadsRunning) {
+            return;
+        }
+
+        // Recreate thread pool if shutdown
+        if (threadPool.isShutdown()) {
+            threadPool = Executors.newFixedThreadPool(4);
+        }
+
+        threadsRunning = true;
+
         threadPool.submit(() -> {
             try {
-                while (true) {
+                while (threadsRunning) {
                     broadcastManager.clearPeerCache();
                     broadcastManager.sendBroadcasts(null);
                     Thread.sleep(BROADCAST_INTERVAL);
@@ -73,6 +88,7 @@ public class App {
                     }
                 }
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -103,8 +119,25 @@ public class App {
         });
     }
 
-    public void shutdownThreads() {
+    public synchronized void shutdownThreads() throws IOException {
+        if (!threadsRunning) {
+            return;
+        }
+
+        threadsRunning = false;
         threadPool.shutdownNow();
+
+        // Reset resources to a clean state
+        broadcastManager.clearPeerCache();
+        localPeerRef.set(broadcastManager.getLocalPeer());
+        fileTransferManager.setLocalPeer(localPeerRef.get());
+        if (mainFrameRef.get() != null) {
+            mainFrameRef.get().getDownloadPanel().updatePeerFileTree();
+        }
+    }
+
+    public boolean isThreadsRunning() {
+        return threadsRunning;
     }
 
     public static void main(String[] args) {
@@ -119,8 +152,11 @@ public class App {
     private static void runGUIApp() {
         System.out.println("Starting the GUI app...");
 
+        AtomicReference<App> appRef = new AtomicReference<>();
         try {
             App app = new App("/home", "/home");
+            appRef.set(app);
+
             SwingUtilities.invokeLater(() -> {
                 MainFrame mainFrame = new MainFrame(app, app.getFileManager(), app.getFileTransferManager());
                 app.mainFrameRef.set(mainFrame);
@@ -128,12 +164,21 @@ public class App {
             });
         } catch (Exception e) {
             e.printStackTrace();
-        } 
+        } finally {
+            App app = appRef.get();
+            if (app != null) {
+                try {
+                    app.shutdownThreads();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     private static void runDockerApp() {
         System.out.println("Starting the non-GUI app...");
-        
+
         App app = null;
         try {
             app = new App("/home", "/home");
@@ -145,7 +190,7 @@ public class App {
             app.fileManager.createRandomFile("test5", 123 * 1024 * 1024 + 282, 5);
 
             Thread.sleep(5000);
-            app.initializeThreads();   
+            app.initializeThreads();
 
             // Keep the main thread alive
             while (true) {
@@ -155,7 +200,11 @@ public class App {
             e.printStackTrace();
         } finally {
             if (app != null) {
-                app.shutdownThreads();
+                try {
+                    app.shutdownThreads();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

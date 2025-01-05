@@ -8,10 +8,12 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Set;
 
+import com.github.fevzibabaoglu.App;
 import com.github.fevzibabaoglu.file.FileManager;
 import com.github.fevzibabaoglu.file.PeerFileMetadata;
 import com.github.fevzibabaoglu.network.NetworkUtils;
@@ -22,10 +24,12 @@ public class FileTransferManager {
     
     private static final int LISTENING_PORT = 8002;
 
+    private final App app;
     private final FileManager fileManager;
     private Peer localPeer;
 
-    public FileTransferManager(FileManager fileManager) throws SocketException {
+    public FileTransferManager(App app, FileManager fileManager) throws SocketException {
+        this.app = app;
         this.fileManager = fileManager;
         localPeer = new Peer();
     }
@@ -36,21 +40,31 @@ public class FileTransferManager {
 
     // Starts the listener to accept incoming connections
     public void listen() throws IOException {
-        try (ServerSocket serverSocket = new ServerSocket(LISTENING_PORT)) {
-            while (true) {
-                Socket incomingSocket = serverSocket.accept();
-                new Thread(() -> {
-                    try {
-                        handleIncomingConnection(incomingSocket);
-                    } catch (ClassNotFoundException | IOException | NoSuchAlgorithmException e) {
-                        e.printStackTrace();
-                    } finally {
+        ServerSocket serverSocket = null;
+        try {
+            serverSocket = new ServerSocket(LISTENING_PORT);
+            serverSocket.setSoTimeout(5000);
+
+            while (app.isThreadsRunning()) {
+                try {
+                    Socket incomingSocket = serverSocket.accept();
+                    new Thread(() -> {
                         try {
-                            incomingSocket.close();
-                        } catch (IOException e) {}
-                    }
-                }).start();
+                            handleIncomingConnection(incomingSocket);
+                        } catch (ClassNotFoundException | IOException | NoSuchAlgorithmException e) {
+                            e.printStackTrace();
+                        } finally {
+                            try {
+                                incomingSocket.close();
+                            } catch (IOException e) {}
+                        }
+                    }).start();
+                } catch (SocketTimeoutException e) {}
             } 
+        } finally {
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+            }
         }
     }
 
