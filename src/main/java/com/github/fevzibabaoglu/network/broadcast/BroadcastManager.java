@@ -19,29 +19,30 @@ public class BroadcastManager {
 
     private final FileManager fileManager;
     private final int ttl;
-    private Peer localPeer;
 
+    private final AtomicReference<Peer> localPeerRef;
     private final AtomicReference<Peer> tempLocalPeerRef;
 
     public BroadcastManager(FileManager fileManager, int ttl) throws IOException {
         this.fileManager = fileManager;
         this.ttl = ttl;
+        localPeerRef = new AtomicReference<>();
         tempLocalPeerRef = new AtomicReference<>();
         clearPeerCache();
     }
 
-    public void clearPeerCache() throws IOException {
-        localPeer = new Peer();
+    public synchronized void clearPeerCache() throws IOException {
+        localPeerRef.set(new Peer());
         tempLocalPeerRef.set(new Peer());
         tempLocalPeerRef.get().setFileMetadatas(fileManager.listSharedFiles());
     }
 
     public Peer getLocalPeer() {
-        return localPeer;
+        return localPeerRef.get();
     }
 
     // Broadcast a discovery message on all network interfaces
-    public void sendBroadcasts(DiscoveryMessage message) throws IOException {
+    public synchronized void sendBroadcasts(DiscoveryMessage message) throws IOException {
         if (message == null) {
             message = new DiscoveryMessage(ttl, tempLocalPeerRef.get());
         }
@@ -133,7 +134,9 @@ public class BroadcastManager {
 
                 // If receivedMessage owner is the localPeer, update the localPeer with new info, else forward response
                 if (NetworkUtils.ipMatch(receivedMessage.getOwner(), localIPAddress) != null) {
-                    localPeer.mergePeer(receivedMessage.getOwner());
+                    synchronized (this) {
+                        getLocalPeer().mergePeer(receivedMessage.getOwner());
+                    }
                     System.out.printf("[%s] Discovered new peers\n", localIPAddress);
                 } else {
                     sendResponse(receivedMessage);
