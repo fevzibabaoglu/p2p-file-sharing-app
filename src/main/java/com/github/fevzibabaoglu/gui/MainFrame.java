@@ -39,7 +39,7 @@ public class MainFrame extends JFrame {
         setJMenuBar(menuBar);
 
         // Add panels
-        filesPanel = new FilesPanel(app, fileManager);
+        filesPanel = new FilesPanel(fileManager);
         downloadPanel = new DownloadPanel(app, fileManager, fileTransferManager);
 
         // Set layout

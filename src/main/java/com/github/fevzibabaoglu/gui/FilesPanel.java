@@ -8,7 +8,6 @@ import java.util.List;
 
 import javax.swing.*;
 
-import com.github.fevzibabaoglu.App;
 import com.github.fevzibabaoglu.file.FileManager;
 
 public class FilesPanel extends JPanel {
@@ -20,7 +19,7 @@ public class FilesPanel extends JPanel {
     private DefaultListModel<String> exclusionListModel;
     private JTextArea maskText;
 
-    public FilesPanel(App app, FileManager fileManager) {
+    public FilesPanel(FileManager fileManager) {
         this.fileManager = fileManager;
 
         sourceFolderField = new JTextField(fileManager.getSourcePath());
