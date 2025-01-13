@@ -91,9 +91,10 @@ public class FileManager {
     public void mergeChunks(List<String> chunkFilenames, String outputFilename) throws IOException, InterruptedException {
         Path outputPath = Paths.get(destinationPath, outputFilename);
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputPath.toString()))) {
-            for (String chunkFilename : chunkFilenames) {
+            for (int i = 0; i < chunkFilenames.size(); i++) {
+                String chunkFilename = String.format("%s.%d", outputFilename, i);
                 Path path = Paths.get(destinationPath, chunkFilename);
-    
+
                 byte[] chunkData = Files.readAllBytes(path);
                 out.write(chunkData);
 
